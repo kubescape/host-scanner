@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -136,9 +135,9 @@ func main() {
 		if err != nil {
 			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
 		}
-
-		if err := json.NewEncoder(rw).Encode(conf); err != nil {
-			zap.L().Error("In kubeletConfigurations handler failed to encode", zap.Error(err))
+		rw.WriteHeader(http.StatusOK)
+		if _, err := rw.Write(conf); err != nil {
+			zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
 		}
 	})
 	listeningPort := 7888

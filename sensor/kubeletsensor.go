@@ -2,7 +2,6 @@ package sensor
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +10,6 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
-	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
 
 const (
@@ -64,19 +62,13 @@ func LocateKubeletProcess() (*ProcessDetails, error) {
 	return LocateProcessByExecSuffix(kubeletProcessSuffix)
 }
 
-func LocateKubeletConfig(kubeletConfArgs string) (*kubeletv1beta1.KubeletConfiguration, error) {
-	res := &kubeletv1beta1.KubeletConfiguration{}
-	confFile, err := os.OpenFile(kubeletConfArgs, os.O_RDONLY, 0)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open conf file: %v", err)
-	}
-	if err := json.NewDecoder(confFile).Decode(res); err != nil {
-		return nil, fmt.Errorf("failed to decode conf file: %v", err)
-	}
-	return res, nil
+func LocateKubeletConfig(kubeletConfArgs string) ([]byte, error) {
+	conte, err := os.ReadFile(kubeletConfArgs)
+	zap.L().Debug("raw content", zap.ByteString("cont", conte))
+	return conte, err
 }
 
-func SenseKubeletConfigurations() (*kubeletv1beta1.KubeletConfiguration, error) {
+func SenseKubeletConfigurations() ([]byte, error) {
 	kubeletProcess, err := LocateKubeletProcess()
 	if err != nil {
 		return nil, fmt.Errorf("failed to LocateKubeletProcess: %v", err)
@@ -95,5 +87,6 @@ func SenseKubeletConfigurations() (*kubeletv1beta1.KubeletConfiguration, error) 
 			}
 		}
 	}
+	zap.L().Debug("config loaction", zap.String("kubeletConfFileLocation", kubeletConfFileLocation))
 	return LocateKubeletConfig(kubeletConfFileLocation)
 }
