@@ -8,5 +8,4 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o kube-host-sensor --ldflags
 
 FROM scratch
 COPY --from=0 /app/kube-host-sensor /.
-# ENTRYPOINT [ "sh" ]
 ENTRYPOINT [ "./kube-host-sensor" ]
