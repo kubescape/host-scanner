@@ -43,13 +43,22 @@ spec:
             containerPort: 7888
         resources:
           limits:
+            cpu: 1m
             memory: 200Mi
           requests:
             cpu: 100m
-            memory: 200Mi       
+            memory: 200Mi
+        volumeMounts:
+        - mountPath: /host_fs
+          name: host-filesystem
       terminationGracePeriodSeconds: 120
       dnsPolicy: ClusterFirstWithHostNet
       automountServiceAccountToken: false
+      volumes:
+      - hostPath:
+          path: /
+          type: Directory
+        name: host-filesystem
       hostNetwork: true
       hostPID: true
       hostIPC: true

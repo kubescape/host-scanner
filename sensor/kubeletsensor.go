@@ -43,7 +43,8 @@ func LocateProcessByExecSuffix(processSuffix string) (*ProcessDetails, error) {
 			}
 			cmdLineSplitted := bytes.Split(cmdLine, []byte{00})
 			if bytes.HasSuffix(cmdLineSplitted[0], []byte(processSuffix)) {
-				zap.L().Debug("process found", zap.String("processSuffix", processSuffix))
+				zap.L().Debug("process found", zap.String("processSuffix", processSuffix),
+					zap.Int64("pid", pid))
 				res := &ProcessDetails{PID: int32(pid), CmdLine: make([]string, 0, len(cmdLineSplitted))}
 				for splitIdx := range cmdLineSplitted {
 					res.CmdLine = append(res.CmdLine, string(cmdLineSplitted[splitIdx]))
@@ -63,7 +64,7 @@ func LocateKubeletProcess() (*ProcessDetails, error) {
 }
 
 func LocateKubeletConfig(kubeletConfArgs string) ([]byte, error) {
-	conte, err := os.ReadFile(kubeletConfArgs)
+	conte, err := ReadFileOnHostFileSystem(kubeletConfArgs)
 	zap.L().Debug("raw content", zap.ByteString("cont", conte))
 	return conte, err
 }
