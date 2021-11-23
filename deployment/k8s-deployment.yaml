@@ -46,7 +46,7 @@ spec:
             cpu: 1m
             memory: 200Mi
           requests:
-            cpu: 100m
+            cpu: 1m
             memory: 200Mi
         volumeMounts:
         - mountPath: /host_fs
