@@ -134,10 +134,11 @@ func main() {
 
 		if err != nil {
 			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
-		}
-		rw.WriteHeader(http.StatusOK)
-		if _, err := rw.Write(conf); err != nil {
-			zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
+		} else {
+			rw.WriteHeader(http.StatusOK)
+			if _, err := rw.Write(conf); err != nil {
+				zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
+			}
 		}
 	})
 	listeningPort := 7888
