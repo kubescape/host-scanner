@@ -15,7 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/armosec/host-sensor/sensor"
 	"github.com/codegangsta/negroni"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -129,18 +128,7 @@ func main() {
 
 	sensorManagerAddress := os.Getenv("ARMO_SENSORS_MANAGER")
 	connectSensorsManagerWebSocket(sensorManagerAddress)
-	http.HandleFunc("/kubeletConfigurations", func(rw http.ResponseWriter, r *http.Request) {
-		conf, err := sensor.SenseKubeletConfigurations()
-
-		if err != nil {
-			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
-		} else {
-			rw.WriteHeader(http.StatusOK)
-			if _, err := rw.Write(conf); err != nil {
-				zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
-			}
-		}
-	})
+	initHTTPHandlers()
 	listeningPort := 7888
 	zapLogger.Info("Listening...", zap.Int("port", listeningPort))
 	if strings.Contains(os.Getenv("CADB_DEBUG"), "pprof") {
