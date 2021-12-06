@@ -37,10 +37,23 @@ func initHTTPHandlers() {
 		}
 	})
 	http.HandleFunc("/osRelease", osReleaseHandler)
+	http.HandleFunc("/kernelVersion", kernelVersionHandler)
 }
 
 func osReleaseHandler(rw http.ResponseWriter, r *http.Request) {
 	fileContent, err := sensor.SenseOsRelease()
+	if err != nil {
+		http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
+	} else {
+		rw.WriteHeader(http.StatusOK)
+		if _, err := rw.Write(fileContent); err != nil {
+			zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
+		}
+	}
+}
+
+func kernelVersionHandler(rw http.ResponseWriter, r *http.Request) {
+	fileContent, err := sensor.SenseKernelVersion()
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
 	} else {

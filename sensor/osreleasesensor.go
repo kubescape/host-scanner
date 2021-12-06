@@ -39,3 +39,7 @@ func getOsReleaseFile() (string, error) {
 	}
 	return "", err
 }
+
+func SenseKernelVersion() ([]byte, error) {
+	return ReadFileOnHostFileSystem(path.Join(procDirName, "version"))
+}
