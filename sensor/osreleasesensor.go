@@ -17,7 +17,7 @@ const (
 func SenseOsRelease() ([]byte, error) {
 	osFileName, err := getOsReleaseFile()
 	if err == nil {
-		return os.ReadFile(osFileName)
+		return ReadFileOnHostFileSystem(path.Join(etcDirName, osFileName))
 	}
 	return []byte{}, fmt.Errorf("failed to find os-release file: %v", err)
 }
