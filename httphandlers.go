@@ -39,6 +39,19 @@ func initHTTPHandlers() {
 	http.HandleFunc("/osRelease", osReleaseHandler)
 	http.HandleFunc("/kernelVersion", kernelVersionHandler)
 	http.HandleFunc("/linuxSecurityHardening", linuxSecurityHardeningHandler)
+	http.HandleFunc("/openedPorts", openedPortsHandler)
+}
+
+func openedPortsHandler(rw http.ResponseWriter, r *http.Request) {
+	respContent, err := sensor.SenseOpenPorts()
+	if err != nil {
+		http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
+	} else {
+		rw.WriteHeader(http.StatusOK)
+		if _, err := rw.Write(respContent); err != nil {
+			zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
+		}
+	}
 }
 
 func osReleaseHandler(rw http.ResponseWriter, r *http.Request) {
