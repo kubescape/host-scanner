@@ -55,7 +55,7 @@ func getAppArmorStatus() string {
 		statusStr = "stopped"
 		content, err := ReadFileOnHostFileSystem(appArmorProfilesFileName)
 		if err == nil && len(content) > 0 {
-			statusStr = "running"
+			statusStr = string(content)
 		}
 	}
 	return statusStr
