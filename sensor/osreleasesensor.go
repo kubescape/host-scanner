@@ -31,6 +31,7 @@ func getOsReleaseFile() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to open etc dir: %v", err)
 	}
+	defer etcDir.Close()
 	etcSons := make([]string, 0)
 	for etcSons, err = etcDir.Readdirnames(100); err == nil; etcSons, err = etcDir.Readdirnames(100) {
 		for idx := range etcSons {
@@ -50,8 +51,9 @@ func SenseKernelVersion() ([]byte, error) {
 func getAppArmorStatus() string {
 	statusStr := "unloaded"
 	hostAppArmorProfilesFileName := path.Join(HostFileSystemDefaultLocation, appArmorProfilesFileName)
-	_, err := os.Open(hostAppArmorProfilesFileName)
+	profFile, err := os.Open(hostAppArmorProfilesFileName)
 	if err == nil {
+		defer profFile.Close()
 		statusStr = "stopped"
 		content, err := ReadFileOnHostFileSystem(appArmorProfilesFileName)
 		if err == nil && len(content) > 0 {
@@ -64,8 +66,9 @@ func getAppArmorStatus() string {
 func getSELinuxStatus() string {
 	statusStr := "not found"
 	hostAppArmorProfilesFileName := path.Join(HostFileSystemDefaultLocation, seLinuxConfigFileName)
-	_, err := os.Open(hostAppArmorProfilesFileName)
+	conFile, err := os.Open(hostAppArmorProfilesFileName)
 	if err == nil {
+		defer conFile.Close()
 		content, err := ReadFileOnHostFileSystem(appArmorProfilesFileName)
 		if err == nil && len(content) > 0 {
 			statusStr = string(content)

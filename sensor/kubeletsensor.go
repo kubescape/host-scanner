@@ -28,6 +28,7 @@ func LocateProcessByExecSuffix(processSuffix string) (*ProcessDetails, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open processes dir: %v", err)
 	}
+	defer procDir.Close()
 	pidDirs := make([]string, 0)
 	for pidDirs, err = procDir.Readdirnames(100); err == nil; pidDirs, err = procDir.Readdirnames(100) {
 		for pidIdx := range pidDirs {
