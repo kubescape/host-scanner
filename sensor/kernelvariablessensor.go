@@ -14,6 +14,8 @@ const (
 	procSysKernelDir = "/proc/sys/kernel"
 )
 
+var confFilesLocations = []string{"/etc/sysctl.d"}
+
 type KernelVariable struct {
 	Key    string `json:"key"`
 	Value  string `json:"value"`
@@ -64,6 +66,11 @@ func walkVarsDir(dirPath string, procDir *os.File) ([]KernelVariable, error) {
 			} else if fileInfo.Mode().IsRegular() {
 				strBld := strings.Builder{}
 				if _, err := io.Copy(&strBld, varFile); err != nil {
+					if strings.Contains(err.Error(), "operation not permitted") {
+						zap.L().Error("In walkVarsDir failed to Copy file", zap.String("varFileName", varFileName),
+							zap.Error(err))
+						continue
+					}
 					return nil, fmt.Errorf("failed to copy file (%s): %v", varFileName, err)
 				}
 				varsList = append(varsList, KernelVariable{
@@ -80,7 +87,18 @@ func walkVarsDir(dirPath string, procDir *os.File) ([]KernelVariable, error) {
 	return varsList, nil
 }
 
-func SenseKernelVariables() ([]KernelVariable, error) {
+func SenseKernelConfs() ([]KernelVariable, error) {
+	varsList := make([]KernelVariable, 0, 16)
 
-	return nil, fmt.Errorf("not implemented")
+	return varsList, nil
+}
+
+func SenseKernelVariables() ([]KernelVariable, error) {
+	vars, err := SenseProcSysKernel()
+	if confVars, err := SenseKernelConfs(); err != nil {
+		zap.L().Error("In SenseKernelVariables failed to SenseKernelConfs", zap.Error(err))
+	} else {
+		vars = append(vars, confVars...)
+	}
+	return vars, err
 }
