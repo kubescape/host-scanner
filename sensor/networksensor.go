@@ -41,6 +41,7 @@ func getOpenedPorts(pathsList []string) ([]procspy.Connection, error) {
 }
 
 func SenseOpenPorts() ([]byte, error) {
+	// TODO: take process name. walks on ProcNetTCPPaths for each process in the system
 	res := OpenPortsStatus{TcpPorts: make([]procspy.Connection, 0)}
 	// tcp
 	ports, err := getOpenedPorts(ProcNetTCPPaths)
