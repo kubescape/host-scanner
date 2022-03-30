@@ -43,7 +43,16 @@ func LocateProcessByExecSuffix(processSuffix string) (*ProcessDetails, error) {
 				continue
 			}
 			cmdLineSplitted := bytes.Split(cmdLine, []byte{00})
-			if bytes.HasSuffix(cmdLineSplitted[0], []byte(processSuffix)) {
+
+			processNameFromCMD := cmdLineSplitted[0]
+			if len(processNameFromCMD) == 0 {
+				continue
+			}
+			// solve open shift kubelet not start with full path
+			if processNameFromCMD[0] != '/' && processNameFromCMD[0] != '[' {
+				processNameFromCMD = append([]byte{'/'}, processNameFromCMD...)
+			}
+			if bytes.HasSuffix(processNameFromCMD, []byte(processSuffix)) {
 				zap.L().Debug("process found", zap.String("processSuffix", processSuffix),
 					zap.Int64("pid", pid))
 				res := &ProcessDetails{PID: int32(pid), CmdLine: make([]string, 0, len(cmdLineSplitted))}
