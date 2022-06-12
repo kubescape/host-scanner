@@ -7,7 +7,7 @@ on:
 jobs:
   build-docker:
     name: Build docker container, tag and upload to registry    
-    if: ${{ github.repository == 'armosec/kubescape' }} # TODO
+    if: ${{ github.repository == 'armosec/host-sensor' }} # TODO
     runs-on: ubuntu-latest
 
     steps:
