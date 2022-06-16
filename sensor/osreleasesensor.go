@@ -1,7 +1,6 @@
 package sensor
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -77,11 +76,11 @@ func getSELinuxStatus() string {
 	return statusStr
 }
 
-func SenseLinuxSecurityHardening() ([]byte, error) {
+func SenseLinuxSecurityHardening() (*LinuxSecurityHardeningStatus, error) {
 	res := LinuxSecurityHardeningStatus{}
 
 	res.AppArmor = getAppArmorStatus()
 	res.SeLinux = getSELinuxStatus()
 
-	return json.Marshal(res)
+	return &res, nil
 }

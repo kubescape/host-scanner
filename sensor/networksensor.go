@@ -1,7 +1,6 @@
 package sensor
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -40,7 +39,7 @@ func getOpenedPorts(pathsList []string) ([]procspy.Connection, error) {
 	return res, nil
 }
 
-func SenseOpenPorts() ([]byte, error) {
+func SenseOpenPorts() (*OpenPortsStatus, error) {
 	// TODO: take process name. walks on ProcNetTCPPaths for each process in the system
 	res := OpenPortsStatus{TcpPorts: make([]procspy.Connection, 0)}
 	// tcp
@@ -64,5 +63,5 @@ func SenseOpenPorts() ([]byte, error) {
 	} else {
 		res.ICMPPorts = ports
 	}
-	return json.Marshal(res)
+	return &res, nil
 }
