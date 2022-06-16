@@ -9,6 +9,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	kubeConfigArgName = "--kubeconfig"
+)
+
 var (
 	ErrNotUnixFS = errors.New("unix operations are not supported")
 )

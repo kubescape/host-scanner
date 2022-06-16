@@ -102,3 +102,8 @@ func (p ProcessDetails) GetArg(argName string) (string, bool) {
 
 	return "", false
 }
+
+// RawCmd returns the raw command used to start the process
+func (p ProcessDetails) RawCmd() string {
+	return strings.Join(p.CmdLine, " ")
+}

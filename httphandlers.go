@@ -43,6 +43,12 @@ func initHTTPHandlers() {
 	http.HandleFunc("/openedPorts", openedPortsHandler)
 	http.HandleFunc("/LinuxKernelVariables", LinuxKernelVariablesHandler)
 	http.HandleFunc("/kubeletInfo", kubeletInfoHandler)
+	http.HandleFunc("/kubeProxyInfo", kubeProxyHandler)
+}
+
+func kubeProxyHandler(rw http.ResponseWriter, r *http.Request) {
+	resp, err := sensor.SenseKubeProxyInfo()
+	GenericSensorHandler(rw, r, resp, err, "SenseKubeProxyInfo")
 }
 
 func kubeletInfoHandler(rw http.ResponseWriter, r *http.Request) {

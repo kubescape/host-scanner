@@ -2,18 +2,16 @@ package sensor
 
 import (
 	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 )
 
 const (
-	procDirName              = "/proc"
-	kubeletProcessSuffix     = "/kubelet"
-	kubeletConfigArgName     = "--config"
-	kubeletKubeConfigArgName = "--kubeconfig"
-	kubeletClientCAArgName   = "--client-ca-file"
+	procDirName            = "/proc"
+	kubeletProcessSuffix   = "/kubelet"
+	kubeletConfigArgName   = "--config"
+	kubeletClientCAArgName = "--client-ca-file"
 
 	// Default paths
 	kubeletConfigDefaultPath     = "/var/lib/kubelet/config.yaml"
@@ -67,7 +65,7 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 
 	// Kubelet kubeconfig
 	kubeConfigPath := kubeletConfigDefaultPath
-	p, ok = kubeletProcess.GetArg(kubeletKubeConfigArgName)
+	p, ok = kubeletProcess.GetArg(kubeConfigArgName)
 	if ok {
 		kubeConfigPath = p
 	}
@@ -93,7 +91,7 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	}
 
 	// Cmd line
-	ret.CmdLine = strings.Join(kubeletProcess.CmdLine, " ")
+	ret.CmdLine = kubeletProcess.RawCmd()
 
 	return &ret, nil
 }

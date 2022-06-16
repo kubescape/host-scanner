@@ -19,7 +19,7 @@ type FileInfo struct {
 	Permissions int `json:"permissions"`
 
 	// Content of the file
-	Content []byte `json:"content"`
+	Content []byte `json:"content,omitempty"`
 }
 
 // FileOwnership holds the ownership of a file
