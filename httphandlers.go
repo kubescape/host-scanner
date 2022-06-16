@@ -42,6 +42,12 @@ func initHTTPHandlers() {
 	http.HandleFunc("/linuxSecurityHardening", linuxSecurityHardeningHandler)
 	http.HandleFunc("/openedPorts", openedPortsHandler)
 	http.HandleFunc("/LinuxKernelVariables", LinuxKernelVariablesHandler)
+	http.HandleFunc("/kubeletInfo", kubeletInfoHandler)
+}
+
+func kubeletInfoHandler(rw http.ResponseWriter, r *http.Request) {
+	resp, err := sensor.SenseKubeletInfo()
+	GenericSensorHandler(rw, r, resp, err, "SenseKubeletInfo")
 }
 
 func LinuxKernelVariablesHandler(rw http.ResponseWriter, r *http.Request) {

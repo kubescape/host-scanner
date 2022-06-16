@@ -6,6 +6,7 @@ require (
 	github.com/codegangsta/negroni v1.0.0
 	github.com/weaveworks/procspy v0.0.0-20150706124340-cb970aa190c3
 	go.uber.org/zap v1.19.1
+	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
