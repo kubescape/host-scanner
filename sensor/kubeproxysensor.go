@@ -1,6 +1,8 @@
 package sensor
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	kubeProxyExe = "kube-proxy"
@@ -28,8 +30,10 @@ func SenseKubeProxyInfo() (*KubeProxyInfo, error) {
 	// kubeconfig
 	kubeConfigPath, ok := proc.GetArg(kubeConfigArgName)
 	if ok {
-		kubeConfigInfo, err := MakeHostFileInfo(kubeConfigPath, false)
+		procRelativPath := proc.ContainredPath(kubeConfigPath)
+		kubeConfigInfo, err := MakeFileInfo(procRelativPath, false)
 		if err == nil {
+			kubeConfigInfo.Path = kubeConfigPath
 			ret.KubeConfigFile = kubeConfigInfo
 		}
 	}

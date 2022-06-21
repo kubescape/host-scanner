@@ -107,3 +107,15 @@ func (p ProcessDetails) GetArg(argName string) (string, bool) {
 func (p ProcessDetails) RawCmd() string {
 	return strings.Join(p.CmdLine, " ")
 }
+
+// RootDir returns the root directory of a process.
+// This is useful when dealing with processes that running inside a container
+func (p ProcessDetails) RootDir() string {
+	return fmt.Sprintf("/proc/%d/root", p.PID)
+}
+
+// ContainredPath returns path for the file that the process see.
+// This is useful when dealing with processes that running inside a container
+func (p ProcessDetails) ContainredPath(filePath string) string {
+	return path.Join(p.RootDir(), filePath)
+}
