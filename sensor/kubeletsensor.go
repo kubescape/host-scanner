@@ -61,6 +61,11 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	configInfo, err := MakeHostFileInfo(configPath, true)
 	if err == nil {
 		ret.ConfigFile = configInfo
+	} else {
+		zap.L().Debug("SenseKubeletInfo failed to MakeHostFileInfo for kubelet config",
+			zap.String("path", configPath),
+			zap.Error(err),
+		)
 	}
 
 	// Kubelet kubeconfig
@@ -72,6 +77,11 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	kubeConfigInfo, err := MakeHostFileInfo(kubeConfigPath, false)
 	if err == nil {
 		ret.KubeConfigFile = kubeConfigInfo
+	} else {
+		zap.L().Debug("SenseKubeletInfo failed to MakeHostFileInfo for kubelet kubeconfig",
+			zap.String("path", kubeConfigPath),
+			zap.Error(err),
+		)
 	}
 
 	// Kubelet client ca certificate
@@ -87,6 +97,11 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 		caInfo, err := MakeHostFileInfo(caFilePath, false)
 		if err == nil {
 			ret.ClientCAFile = caInfo
+		} else {
+			zap.L().Debug("SenseKubeletInfo failed to MakeHostFileInfo for client ca file",
+				zap.String("path", caFilePath),
+				zap.Error(err),
+			)
 		}
 	}
 

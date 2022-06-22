@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	ErrNotUnixFS = errors.New("unix operations are not supported")
+	ErrNotUnixFS = errors.New("operation not supported by the file system")
 )
 
 func ReadFileOnHostFileSystem(fileName string) ([]byte, error) {

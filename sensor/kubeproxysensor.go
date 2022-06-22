@@ -2,6 +2,8 @@ package sensor
 
 import (
 	"fmt"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -35,6 +37,11 @@ func SenseKubeProxyInfo() (*KubeProxyInfo, error) {
 		if err == nil {
 			kubeConfigInfo.Path = kubeConfigPath
 			ret.KubeConfigFile = kubeConfigInfo
+		} else {
+			zap.L().Debug("SenseKubeProxyInfo failed to MakeFileInfo for kube-proxy kubeconfig",
+				zap.String("path", kubeConfigPath),
+				zap.Error(err),
+			)
 		}
 	}
 
