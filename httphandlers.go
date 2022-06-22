@@ -42,30 +42,28 @@ func initHTTPHandlers() {
 	http.HandleFunc("/linuxSecurityHardening", linuxSecurityHardeningHandler)
 	http.HandleFunc("/openedPorts", openedPortsHandler)
 	http.HandleFunc("/LinuxKernelVariables", LinuxKernelVariablesHandler)
+	http.HandleFunc("/kubeletInfo", kubeletInfoHandler)
+	http.HandleFunc("/kubeProxyInfo", kubeProxyHandler)
+}
+
+func kubeProxyHandler(rw http.ResponseWriter, r *http.Request) {
+	resp, err := sensor.SenseKubeProxyInfo()
+	GenericSensorHandler(rw, r, resp, err, "SenseKubeProxyInfo")
+}
+
+func kubeletInfoHandler(rw http.ResponseWriter, r *http.Request) {
+	resp, err := sensor.SenseKubeletInfo()
+	GenericSensorHandler(rw, r, resp, err, "SenseKubeletInfo")
 }
 
 func LinuxKernelVariablesHandler(rw http.ResponseWriter, r *http.Request) {
-	respContent, err := sensor.SenseKernelVariables()
-	if err != nil {
-		http.Error(rw, fmt.Sprintf("failed to SenseKernelVariables: %v", err), http.StatusInternalServerError)
-	} else {
-		rw.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(rw).Encode(respContent); err != nil {
-			zap.L().Error("In LinuxKernelVariablesHandler handler failed to write", zap.Error(err))
-		}
-	}
+	resp, err := sensor.SenseKernelVariables()
+	GenericSensorHandler(rw, r, resp, err, "SenseKernelVariables")
 }
 
 func openedPortsHandler(rw http.ResponseWriter, r *http.Request) {
-	respContent, err := sensor.SenseOpenPorts()
-	if err != nil {
-		http.Error(rw, fmt.Sprintf("failed to SenseOpenPorts: %v", err), http.StatusInternalServerError)
-	} else {
-		rw.WriteHeader(http.StatusOK)
-		if _, err := rw.Write(respContent); err != nil {
-			zap.L().Error("In openedPortsHandler handler failed to write", zap.Error(err))
-		}
-	}
+	resp, err := sensor.SenseOpenPorts()
+	GenericSensorHandler(rw, r, resp, err, "SenseOpenPorts")
 }
 
 func osReleaseHandler(rw http.ResponseWriter, r *http.Request) {
@@ -93,13 +91,17 @@ func kernelVersionHandler(rw http.ResponseWriter, r *http.Request) {
 }
 
 func linuxSecurityHardeningHandler(rw http.ResponseWriter, r *http.Request) {
-	fileContent, err := sensor.SenseLinuxSecurityHardening()
+	resp, err := sensor.SenseLinuxSecurityHardening()
+	GenericSensorHandler(rw, r, resp, err, "sense linuxSecurityHardeningHandler")
+}
+
+func GenericSensorHandler(w http.ResponseWriter, r *http.Request, respContent interface{}, err error, senseName string) {
 	if err != nil {
-		http.Error(rw, fmt.Sprintf("failed to sense linuxSecurityHardeningHandler: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to %s: %v", senseName, err), http.StatusInternalServerError)
 	} else {
-		rw.WriteHeader(http.StatusOK)
-		if _, err := rw.Write(fileContent); err != nil {
-			zap.L().Error("In linuxSecurityHardeningHandler handler failed to write", zap.Error(err))
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(respContent); err != nil {
+			zap.L().Error(fmt.Sprintf("In %s handler failed to write", senseName), zap.Error(err))
 		}
 	}
 }
