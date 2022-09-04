@@ -25,7 +25,7 @@ func SenseOsRelease() ([]byte, error) {
 }
 
 func getOsReleaseFile() (string, error) {
-	hostEtcDir := path.Join(HostFileSystemDefaultLocation, etcDirName)
+	hostEtcDir := hostPath(etcDirName)
 	etcDir, err := os.Open(hostEtcDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to open etc dir: %v", err)

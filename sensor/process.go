@@ -21,6 +21,7 @@ type ProcessDetails struct {
 // The first entry at `/proc` that matchs the suffix is returned, other process are ignored.
 // It returns a `ProcessDetails` object.
 func LocateProcessByExecSuffix(processSuffix string) (*ProcessDetails, error) {
+	// TODO: consider taking the exec name from /proc/[pid]/exe instead of /proc/[pid]/cmdline
 	procDir, err := os.Open(procDirName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open processes dir: %v", err)
@@ -109,13 +110,13 @@ func (p ProcessDetails) RawCmd() string {
 }
 
 // RootDir returns the root directory of a process.
-// This is useful when dealing with processes that running inside a container
+// This is useful when dealing with processes that are running inside a container
 func (p ProcessDetails) RootDir() string {
 	return fmt.Sprintf("/proc/%d/root", p.PID)
 }
 
-// ContainredPath returns path for the file that the process see.
-// This is useful when dealing with processes that running inside a container
-func (p ProcessDetails) ContainredPath(filePath string) string {
+// ContainerdPath returns path for the file that the process see.
+// This is useful when dealing with processes that are running inside a container
+func (p ProcessDetails) ContainerdPath(filePath string) string {
 	return path.Join(p.RootDir(), filePath)
 }
