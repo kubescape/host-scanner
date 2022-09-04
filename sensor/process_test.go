@@ -9,9 +9,9 @@ import (
 func TestProcessDetails_GetArg(t *testing.T) {
 	tests := []struct {
 		name    string
-		p       ProcessDetails
 		arg     string
 		wantVal string
+		p       ProcessDetails
 		wantOK  bool
 	}{
 		{

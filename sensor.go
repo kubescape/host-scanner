@@ -120,7 +120,7 @@ func filterNLogHTTPErrors(rw http.ResponseWriter, r *http.Request, next http.Han
 
 // main
 func main() {
-	fmt.Println("Starting ARMO cluser node host sensor service")
+	fmt.Println("Starting Kubescape cluster node host scanner service")
 	baseLogger := initLogger()
 	negroniRouter := initHTTPRouter()
 

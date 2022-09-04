@@ -14,8 +14,6 @@ const (
 	procSysKernelDir = "/proc/sys/kernel"
 )
 
-var confFilesLocations = []string{"/etc/sysctl.d"}
-
 type KernelVariable struct {
 	Key    string `json:"key"`
 	Value  string `json:"value"`
@@ -33,7 +31,7 @@ func SenseProcSysKernel() ([]KernelVariable, error) {
 }
 
 func walkVarsDir(dirPath string, procDir *os.File) ([]KernelVariable, error) {
-	varsNames := make([]string, 0)
+	var varsNames []string
 	varsList := make([]KernelVariable, 0, 128)
 
 	var err error
