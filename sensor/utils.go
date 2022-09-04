@@ -160,7 +160,7 @@ func makeHostDirFilesInfo(dir string, recursive bool, fileInfos *([]*FileInfo), 
 			}
 
 			// Check if is directory
-			stats, err := os.Stat(filePath)
+			stats, err := os.Stat(hostPath(filePath))
 			if err != nil {
 				zap.L().Error("failed to get file stats",
 					zap.String("in", "makeHostDirFilesInfo"),
