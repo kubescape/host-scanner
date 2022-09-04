@@ -31,7 +31,7 @@ func getOsReleaseFile() (string, error) {
 		return "", fmt.Errorf("failed to open etc dir: %v", err)
 	}
 	defer etcDir.Close()
-	etcSons := make([]string, 0)
+	var etcSons []string
 	for etcSons, err = etcDir.Readdirnames(100); err == nil; etcSons, err = etcDir.Readdirnames(100) {
 		for idx := range etcSons {
 			if strings.HasSuffix(etcSons[idx], osReleaseFileSuffix) {

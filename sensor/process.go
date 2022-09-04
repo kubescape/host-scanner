@@ -13,12 +13,12 @@ import (
 )
 
 type ProcessDetails struct {
-	PID     int32    `json:"pid"`
 	CmdLine []string `json:"cmdline"`
+	PID     int32    `json:"pid"`
 }
 
-// LocateProcessByExecSuffix locates process with exectuable name ends with `processSuffix`.
-// The first entry at `/proc` that matchs the suffix is returned, other process are ignored.
+// LocateProcessByExecSuffix locates process with executable name ends with `processSuffix`.
+// The first entry at `/proc` that matches the suffix is returned, other process are ignored.
 // It returns a `ProcessDetails` object.
 func LocateProcessByExecSuffix(processSuffix string) (*ProcessDetails, error) {
 	procDir, err := os.Open(procDirName)
