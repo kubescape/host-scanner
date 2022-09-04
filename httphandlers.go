@@ -44,6 +44,12 @@ func initHTTPHandlers() {
 	http.HandleFunc("/LinuxKernelVariables", LinuxKernelVariablesHandler)
 	http.HandleFunc("/kubeletInfo", kubeletInfoHandler)
 	http.HandleFunc("/kubeProxyInfo", kubeProxyHandler)
+	http.HandleFunc("/controlPlaneInfo", controlPlaneHandler)
+}
+
+func controlPlaneHandler(rw http.ResponseWriter, r *http.Request) {
+	resp, err := sensor.SenseControlPlaneInfo()
+	GenericSensorHandler(rw, r, resp, err, "SenseControlPlaneInfo")
 }
 
 func kubeProxyHandler(rw http.ResponseWriter, r *http.Request) {

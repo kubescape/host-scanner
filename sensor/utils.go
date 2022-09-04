@@ -2,11 +2,14 @@ package sensor
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path"
 	"syscall"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -106,4 +109,72 @@ func MakeHostFileInfo(filePath string, readContent bool) (*FileInfo, error) {
 		obj.Path = filePath
 	}
 	return obj, err
+}
+
+// makeHostFileInfoVerbose is wrapper of `MakeHostFileInfo` with error logging
+func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Field) *FileInfo {
+	fileInfo, err := MakeHostFileInfo(path, readContent)
+	if err != nil {
+		logArgs := append([]zapcore.Field{
+			zap.String("path", path),
+			zap.Error(err),
+		},
+			failMsgs...,
+		)
+		zap.L().Error("failed to MakeHostFileInfo", logArgs...)
+	}
+	return fileInfo
+}
+
+// makeHostDirFilesInfo iterate over a directory and make a list of
+// file infos for all the files inside it according to the match regex.
+// Empty match means match all.
+func makeHostDirFilesInfo(dir string, recursive bool, fileInfos []*FileInfo) ([]*FileInfo, error) {
+	etcDir, err := os.Open(hostPath(dir))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open dir at %s: %w", dir, err)
+	}
+	defer etcDir.Close()
+
+	if fileInfos == nil {
+		fileInfos = make([]*FileInfo, 0)
+	}
+
+	var fileNames []string
+	for fileNames, err = etcDir.Readdirnames(100); err == nil; fileNames, err = etcDir.Readdirnames(100) {
+		for i := range fileNames {
+			filePath := path.Join(pkiDir, fileNames[i])
+			fileInfo := makeHostFileInfoVerbose(filePath,
+				false,
+				zap.String("in", "makeHostDirFilesInfo"),
+				zap.String("dir", dir),
+			)
+
+			if fileInfo != nil {
+				fileInfos = append(fileInfos, fileInfo)
+			}
+
+			if !recursive {
+				continue
+			}
+
+			// Check if is directory
+			stats, err := os.Stat(filePath)
+			if err != nil {
+				zap.L().Error("failed to get file stats",
+					zap.String("in", "makeHostDirFilesInfo"),
+					zap.String("path", filePath))
+				continue
+			}
+			if stats.IsDir() {
+				makeHostDirFilesInfo(filePath, recursive, fileInfos)
+			}
+		}
+	}
+
+	if errors.Is(err, io.EOF) {
+		err = nil
+	}
+
+	return fileInfos, err
 }
