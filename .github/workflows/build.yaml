@@ -10,11 +10,11 @@ on:
 jobs:
   build-docker:
     name: Build docker container, tag and upload to registry    
-    if: ${{ github.repository == 'kubescape/host-scanner' }} # TODO
+    if: ${{ github.repository == 'kubescape/host-scanner' }}
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
  
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -28,7 +28,7 @@ jobs:
 
       - name: Set image name
         id: image-name
-        run: echo '::set-output name=IMAGE_NAME::quay.io/${{ github.repository_owner }}/kube-host-sensor'
+        run: echo '::set-output name=IMAGE_NAME::quay.io/${{ github.repository_owner }}/host-scanner'
 
       - name: Login to Quay.io
         env:

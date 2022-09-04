@@ -1,0 +1,38 @@
+name: pr-checks
+
+on:
+  pull_request:
+    branches: [ master, dev ]
+    types: [ edited, opened, synchronize, reopened ]
+    paths-ignore:
+      - '**.md'
+      - '**.yaml'
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Cache Go modules (Linux)
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+ 
+      - name: Run UnitTest
+        run: go test -v ./...
+      
+      - name: Test go build
+        run: go build 
