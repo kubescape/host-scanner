@@ -95,13 +95,27 @@ func linuxSecurityHardeningHandler(rw http.ResponseWriter, r *http.Request) {
 	GenericSensorHandler(rw, r, resp, err, "sense linuxSecurityHardeningHandler")
 }
 
+// GenericSensorHandler do the generic job of encoding the response and error handeling
 func GenericSensorHandler(w http.ResponseWriter, r *http.Request, respContent interface{}, err error, senseName string) {
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to %s: %v", senseName, err), http.StatusInternalServerError)
-	} else {
+
+	// Response ok
+	if err == nil {
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(respContent); err != nil {
 			zap.L().Error(fmt.Sprintf("In %s handler failed to write", senseName), zap.Error(err))
 		}
+		return
+	}
+
+	// Handle errors
+	senseErr, ok := err.(*sensor.SenseError)
+	if !ok {
+		http.Error(w, fmt.Sprintf("failed to %s: %v", senseName, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(senseErr.Code)
+	if err := json.NewEncoder(w).Encode(senseErr); err != nil {
+		zap.L().Error(fmt.Sprintf("In %s handler failed to write", senseName), zap.Error(err))
 	}
 }
