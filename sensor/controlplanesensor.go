@@ -15,7 +15,7 @@ const (
 	etcdExe              = "/etcd"
 	etcdDataDirArg       = "--data-dir"
 
-	// Default files paths
+	// Default files paths according to https://workbench.cisecurity.org/benchmarks/8973/sections/1126652
 	apiServerSpecsPath          = "/etc/kubernetes/manifests/kube-apiserver.yaml"
 	controllerManagerSpecsPath  = "/etc/kubernetes/manifests/kube-controller-manager.yaml"
 	controllerManagerConfigPath = "/etc/kubernetes/controller-manager.conf"
@@ -167,7 +167,7 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	)
 
 	// PKIFiles
-	ret.PKIFiles, err = makeHostDirFilesInfo(pkiDir, true, nil)
+	ret.PKIFiles, err = makeHostDirFilesInfo(pkiDir, true, nil, 0)
 	if err != nil {
 		zap.L().Error("SenseControlPlaneInfo failed to get PKIFiles info", zap.Error(err))
 	}

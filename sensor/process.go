@@ -115,8 +115,8 @@ func (p ProcessDetails) RootDir() string {
 	return fmt.Sprintf("/proc/%d/root", p.PID)
 }
 
-// ContainerdPath returns path for the file that the process see.
+// ContaineredPath returns path for the file that the process see.
 // This is useful when dealing with processes that are running inside a container
-func (p ProcessDetails) ContainerdPath(filePath string) string {
+func (p ProcessDetails) ContaineredPath(filePath string) string {
 	return path.Join(p.RootDir(), filePath)
 }

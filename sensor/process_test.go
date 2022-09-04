@@ -64,13 +64,13 @@ func TestProcessDetails_GetArg(t *testing.T) {
 	}
 }
 
-func TestProcessDetails_RawCmd(t *testing.T) {
+func TestProcessDetailsRawCmd(t *testing.T) {
 	p := ProcessDetails{CmdLine: []string{"/foo/bar baz", "--flag", "value", "-f", "-d", "--flag=value"}}
 	assert.Equal(t, p.RawCmd(), "/foo/bar baz --flag value -f -d --flag=value")
 }
 
-func TestProcessDetails_ContainerdPath(t *testing.T) {
+func TestProcessDetailsContainerdPath(t *testing.T) {
 	p := ProcessDetails{PID: 1}
-	assert.Equal(t, p.ContainerdPath("/foo/bar"), "/proc/1/root/foo/bar")
-	assert.Equal(t, p.ContainerdPath("foo/bar"), "/proc/1/root/foo/bar")
+	assert.Equal(t, p.ContaineredPath("/foo/bar"), "/proc/1/root/foo/bar")
+	assert.Equal(t, p.ContaineredPath("foo/bar"), "/proc/1/root/foo/bar")
 }

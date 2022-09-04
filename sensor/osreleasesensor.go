@@ -49,7 +49,7 @@ func SenseKernelVersion() ([]byte, error) {
 
 func getAppArmorStatus() string {
 	statusStr := "unloaded"
-	hostAppArmorProfilesFileName := path.Join(HostFileSystemDefaultLocation, appArmorProfilesFileName)
+	hostAppArmorProfilesFileName := hostPath(appArmorProfilesFileName)
 	profFile, err := os.Open(hostAppArmorProfilesFileName)
 	if err == nil {
 		defer profFile.Close()
@@ -64,7 +64,7 @@ func getAppArmorStatus() string {
 
 func getSELinuxStatus() string {
 	statusStr := "not found"
-	hostAppArmorProfilesFileName := path.Join(HostFileSystemDefaultLocation, seLinuxConfigFileName)
+	hostAppArmorProfilesFileName := hostPath(seLinuxConfigFileName)
 	conFile, err := os.Open(hostAppArmorProfilesFileName)
 	if err == nil {
 		defer conFile.Close()

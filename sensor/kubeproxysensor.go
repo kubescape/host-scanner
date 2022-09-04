@@ -32,7 +32,7 @@ func SenseKubeProxyInfo() (*KubeProxyInfo, error) {
 	// kubeconfig
 	kubeConfigPath, ok := proc.GetArg(kubeConfigArgName)
 	if ok {
-		procRelativPath := proc.ContainerdPath(kubeConfigPath)
+		procRelativPath := proc.ContaineredPath(kubeConfigPath)
 		kubeConfigInfo, err := MakeFileInfo(procRelativPath, false)
 		if err == nil {
 			kubeConfigInfo.Path = kubeConfigPath

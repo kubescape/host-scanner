@@ -14,6 +14,7 @@ import (
 
 const (
 	kubeConfigArgName = "--kubeconfig"
+	maxRecursionDepth = 10
 )
 
 var (
@@ -25,7 +26,7 @@ func ReadFileOnHostFileSystem(fileName string) ([]byte, error) {
 }
 
 func hostPath(filePath string) string {
-	return path.Join(HostFileSystemDefaultLocation, filePath)
+	return path.Join(hostFileSystemDefaultLocation, filePath)
 }
 
 // GetFilePermissions returns file permissions as int.
@@ -127,23 +128,23 @@ func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Fiel
 }
 
 // makeHostDirFilesInfo iterate over a directory and make a list of
-// file infos for all the files inside it according to the match regex.
-// Empty match means match all.
-func makeHostDirFilesInfo(dir string, recursive bool, fileInfos []*FileInfo) ([]*FileInfo, error) {
-	etcDir, err := os.Open(hostPath(dir))
+// file infos for all the files inside it. If `recursive` is set to true,
+// the file infos will be added recursively until `maxRecursionDepth` is reached
+func makeHostDirFilesInfo(dir string, recursive bool, fileInfos *([]*FileInfo), recursionLevel int) ([]*FileInfo, error) {
+	dirInfo, err := os.Open(hostPath(dir))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open dir at %s: %w", dir, err)
 	}
-	defer etcDir.Close()
+	defer dirInfo.Close()
 
 	if fileInfos == nil {
-		fileInfos = make([]*FileInfo, 0)
+		fileInfos = &([]*FileInfo{})
 	}
 
 	var fileNames []string
-	for fileNames, err = etcDir.Readdirnames(100); err == nil; fileNames, err = etcDir.Readdirnames(100) {
+	for fileNames, err = dirInfo.Readdirnames(100); err == nil; fileNames, err = dirInfo.Readdirnames(100) {
 		for i := range fileNames {
-			filePath := path.Join(pkiDir, fileNames[i])
+			filePath := path.Join(dir, fileNames[i])
 			fileInfo := makeHostFileInfoVerbose(filePath,
 				false,
 				zap.String("in", "makeHostDirFilesInfo"),
@@ -151,7 +152,7 @@ func makeHostDirFilesInfo(dir string, recursive bool, fileInfos []*FileInfo) ([]
 			)
 
 			if fileInfo != nil {
-				fileInfos = append(fileInfos, fileInfo)
+				*fileInfos = append(*fileInfos, fileInfo)
 			}
 
 			if !recursive {
@@ -167,7 +168,13 @@ func makeHostDirFilesInfo(dir string, recursive bool, fileInfos []*FileInfo) ([]
 				continue
 			}
 			if stats.IsDir() {
-				makeHostDirFilesInfo(filePath, recursive, fileInfos)
+				if recursionLevel+1 == maxRecursionDepth {
+					zap.L().Error("max recusrion depth exceeded",
+						zap.String("in", "makeHostDirFilesInfo"),
+						zap.String("path", filePath))
+					continue
+				}
+				makeHostDirFilesInfo(filePath, recursive, fileInfos, recursionLevel+1)
 			}
 		}
 	}
@@ -176,5 +183,5 @@ func makeHostDirFilesInfo(dir string, recursive bool, fileInfos []*FileInfo) ([]
 		err = nil
 	}
 
-	return fileInfos, err
+	return *fileInfos, err
 }
