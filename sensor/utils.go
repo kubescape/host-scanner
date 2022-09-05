@@ -2,15 +2,19 @@ package sensor
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path"
 	"syscall"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
 	kubeConfigArgName = "--kubeconfig"
+	maxRecursionDepth = 10
 )
 
 var (
@@ -22,7 +26,7 @@ func ReadFileOnHostFileSystem(fileName string) ([]byte, error) {
 }
 
 func hostPath(filePath string) string {
-	return path.Join(HostFileSystemDefaultLocation, filePath)
+	return path.Join(hostFileSystemDefaultLocation, filePath)
 }
 
 // GetFilePermissions returns file permissions as int.
@@ -106,4 +110,78 @@ func MakeHostFileInfo(filePath string, readContent bool) (*FileInfo, error) {
 		obj.Path = filePath
 	}
 	return obj, err
+}
+
+// makeHostFileInfoVerbose is wrapper of `MakeHostFileInfo` with error logging
+func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Field) *FileInfo {
+	fileInfo, err := MakeHostFileInfo(path, readContent)
+	if err != nil {
+		logArgs := append([]zapcore.Field{
+			zap.String("path", path),
+			zap.Error(err),
+		},
+			failMsgs...,
+		)
+		zap.L().Error("failed to MakeHostFileInfo", logArgs...)
+	}
+	return fileInfo
+}
+
+// makeHostDirFilesInfo iterate over a directory and make a list of
+// file infos for all the files inside it. If `recursive` is set to true,
+// the file infos will be added recursively until `maxRecursionDepth` is reached
+func makeHostDirFilesInfo(dir string, recursive bool, fileInfos *([]*FileInfo), recursionLevel int) ([]*FileInfo, error) {
+	dirInfo, err := os.Open(hostPath(dir))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open dir at %s: %w", dir, err)
+	}
+	defer dirInfo.Close()
+
+	if fileInfos == nil {
+		fileInfos = &([]*FileInfo{})
+	}
+
+	var fileNames []string
+	for fileNames, err = dirInfo.Readdirnames(100); err == nil; fileNames, err = dirInfo.Readdirnames(100) {
+		for i := range fileNames {
+			filePath := path.Join(dir, fileNames[i])
+			fileInfo := makeHostFileInfoVerbose(filePath,
+				false,
+				zap.String("in", "makeHostDirFilesInfo"),
+				zap.String("dir", dir),
+			)
+
+			if fileInfo != nil {
+				*fileInfos = append(*fileInfos, fileInfo)
+			}
+
+			if !recursive {
+				continue
+			}
+
+			// Check if is directory
+			stats, err := os.Stat(hostPath(filePath))
+			if err != nil {
+				zap.L().Error("failed to get file stats",
+					zap.String("in", "makeHostDirFilesInfo"),
+					zap.String("path", filePath))
+				continue
+			}
+			if stats.IsDir() {
+				if recursionLevel+1 == maxRecursionDepth {
+					zap.L().Error("max recusrion depth exceeded",
+						zap.String("in", "makeHostDirFilesInfo"),
+						zap.String("path", filePath))
+					continue
+				}
+				makeHostDirFilesInfo(filePath, recursive, fileInfos, recursionLevel+1)
+			}
+		}
+	}
+
+	if errors.Is(err, io.EOF) {
+		err = nil
+	}
+
+	return *fileInfos, err
 }

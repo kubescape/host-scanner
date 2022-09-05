@@ -6,6 +6,8 @@ const (
 	ActionTypeGetKubeletCMD = iota + 1
 )
 
-const (
-	HostFileSystemDefaultLocation = "/host_fs"
+var (
+	// Where the host sensor is expecting host fs to be mounted.
+	// Defined as var for testing purposes only
+	hostFileSystemDefaultLocation = "/host_fs"
 )

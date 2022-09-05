@@ -1,6 +1,10 @@
 package sensor
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestProcessDetails_GetArg(t *testing.T) {
 	tests := []struct {
@@ -58,4 +62,15 @@ func TestProcessDetails_GetArg(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProcessDetailsRawCmd(t *testing.T) {
+	p := ProcessDetails{CmdLine: []string{"/foo/bar baz", "--flag", "value", "-f", "-d", "--flag=value"}}
+	assert.Equal(t, p.RawCmd(), "/foo/bar baz --flag value -f -d --flag=value")
+}
+
+func TestProcessDetailsContainerdPath(t *testing.T) {
+	p := ProcessDetails{PID: 1}
+	assert.Equal(t, p.ContaineredPath("/foo/bar"), "/proc/1/root/foo/bar")
+	assert.Equal(t, p.ContaineredPath("foo/bar"), "/proc/1/root/foo/bar")
 }

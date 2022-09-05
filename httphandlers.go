@@ -44,6 +44,12 @@ func initHTTPHandlers() {
 	http.HandleFunc("/LinuxKernelVariables", LinuxKernelVariablesHandler)
 	http.HandleFunc("/kubeletInfo", kubeletInfoHandler)
 	http.HandleFunc("/kubeProxyInfo", kubeProxyHandler)
+	http.HandleFunc("/controlPlaneInfo", controlPlaneHandler)
+}
+
+func controlPlaneHandler(rw http.ResponseWriter, r *http.Request) {
+	resp, err := sensor.SenseControlPlaneInfo()
+	GenericSensorHandler(rw, r, resp, err, "SenseControlPlaneInfo")
 }
 
 func kubeProxyHandler(rw http.ResponseWriter, r *http.Request) {
@@ -95,13 +101,27 @@ func linuxSecurityHardeningHandler(rw http.ResponseWriter, r *http.Request) {
 	GenericSensorHandler(rw, r, resp, err, "sense linuxSecurityHardeningHandler")
 }
 
+// GenericSensorHandler do the generic job of encoding the response and error handeling
 func GenericSensorHandler(w http.ResponseWriter, r *http.Request, respContent interface{}, err error, senseName string) {
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to %s: %v", senseName, err), http.StatusInternalServerError)
-	} else {
+
+	// Response ok
+	if err == nil {
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(respContent); err != nil {
 			zap.L().Error(fmt.Sprintf("In %s handler failed to write", senseName), zap.Error(err))
 		}
+		return
+	}
+
+	// Handle errors
+	senseErr, ok := err.(*sensor.SenseError)
+	if !ok {
+		http.Error(w, fmt.Sprintf("failed to %s: %v", senseName, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(senseErr.Code)
+	if err := json.NewEncoder(w).Encode(senseErr); err != nil {
+		zap.L().Error(fmt.Sprintf("In %s handler failed to write", senseName), zap.Error(err))
 	}
 }
