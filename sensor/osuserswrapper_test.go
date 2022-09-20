@@ -47,7 +47,7 @@ func Test_LookupUsernameByUID(t *testing.T) {
 
 	for _, tt := range uid_tests {
 		t.Run(tt.name, func(t *testing.T) {
-			username, err := LookupUsernameByUID(tt.uid, tt.root)
+			username, err := lookupUsernameByUID(tt.uid, tt.root)
 
 			if err != nil {
 				if tt.wantErr {

@@ -64,7 +64,7 @@ func lookupUser(uid string, root string) (*user.User, error) {
 }
 
 // returns username if uid was found in a users file {root}/etc/passwd, otherwise returns empty string.
-func LookupUsernameByUID(uid int64, root string) (string, error) {
+func lookupUsernameByUID(uid int64, root string) (string, error) {
 	userData, err := lookupUser(strconv.FormatInt(uid, 10), root)
 
 	if err != nil {

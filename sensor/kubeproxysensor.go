@@ -32,7 +32,7 @@ func SenseKubeProxyInfo() (*KubeProxyInfo, error) {
 	// kubeconfig
 	kubeConfigPath, ok := proc.GetArg("--config")
 	if ok {
-		kubeConfigInfo, err := MakeContaineredFileInfo(kubeConfigPath, false, proc)
+		kubeConfigInfo, err := makeContaineredFileInfo(kubeConfigPath, false, proc)
 		ret.KubeConfigFile = kubeConfigInfo
 		if err != nil {
 			zap.L().Debug("SenseKubeProxyInfo failed to MakeFileInfo for kube-proxy kubeconfig",

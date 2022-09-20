@@ -104,17 +104,17 @@ func MakeFileInfo(filePath string, readContent bool) (*FileInfo, error) {
 }
 
 // MakeContaineredFileInfo is a wrapper of `MakeChangedRootFileInfo` for container files
-func MakeContaineredFileInfo(filePath string, readContent bool, p *ProcessDetails) (*FileInfo, error) {
-	return MakeChangedRootFileInfo(filePath, readContent, p.RootDir())
+func makeContaineredFileInfo(filePath string, readContent bool, p *ProcessDetails) (*FileInfo, error) {
+	return makeChangedRootFileInfo(filePath, readContent, p.RootDir())
 }
 
 // MakeHostFileInfo is a wrapper of `MakeChangedRootFileInfo` for host files
-func MakeHostFileInfo(filePath string, readContent bool) (*FileInfo, error) {
-	return MakeChangedRootFileInfo(filePath, readContent, hostFileSystemDefaultLocation)
+func makeHostFileInfo(filePath string, readContent bool) (*FileInfo, error) {
+	return makeChangedRootFileInfo(filePath, readContent, hostFileSystemDefaultLocation)
 }
 
 // MakeHostFileInfo is a wrapper of `MakeFileInfo` for rootDir/filePath
-func MakeChangedRootFileInfo(filePath string, readContent bool, rootDir string) (*FileInfo, error) {
+func makeChangedRootFileInfo(filePath string, readContent bool, rootDir string) (*FileInfo, error) {
 	fullPath := path.Join(rootDir, filePath)
 	obj, err := MakeFileInfo(fullPath, readContent)
 
@@ -125,7 +125,7 @@ func MakeChangedRootFileInfo(filePath string, readContent bool, rootDir string) 
 	obj.Path = fullPath
 
 	// Username
-	username, err := LookupUsernameByUID(obj.Ownership.UID, rootDir)
+	username, err := lookupUsernameByUID(obj.Ownership.UID, rootDir)
 	obj.Ownership.Username = username
 
 	if err != nil {
@@ -145,7 +145,7 @@ func MakeChangedRootFileInfo(filePath string, readContent bool, rootDir string) 
 
 // makeHostFileInfoVerbose is wrapper of `MakeHostFileInfo` with error logging
 func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Field) *FileInfo {
-	fileInfo, err := MakeHostFileInfo(path, readContent)
+	fileInfo, err := makeHostFileInfo(path, readContent)
 	if err != nil {
 		logArgs := append([]zapcore.Field{
 			zap.String("path", path),
