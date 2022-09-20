@@ -12,7 +12,7 @@ func Test_makeHostDirFilesInfo(t *testing.T) {
 	hostFileSystemDefaultLocation = "."
 	fileInfos, err := makeHostDirFilesInfo("testdata", true, nil, 0)
 	assert.NoError(t, err)
-	assert.Len(t, fileInfos, 5)
+	assert.Len(t, fileInfos, 8)
 
 	// Test maxRecursionDepth
 	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
@@ -21,6 +21,6 @@ func Test_makeHostDirFilesInfo(t *testing.T) {
 
 	fileInfos, err = makeHostDirFilesInfo("testdata", true, nil, maxRecursionDepth-1)
 	assert.NoError(t, err)
-	assert.Len(t, fileInfos, 4)
-	assert.Len(t, observedLogs.FilterMessage("max recusrion depth exceeded").All(), 1)
+	assert.Len(t, fileInfos, 5)
+	assert.Len(t, observedLogs.FilterMessage("max recusrion depth exceeded").All(), 2)
 }

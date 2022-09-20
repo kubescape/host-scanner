@@ -58,7 +58,7 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	if ok {
 		configPath = p
 	}
-	configInfo, err := MakeHostFileInfo(configPath, true)
+	configInfo, err := makeHostFileInfo(configPath, true)
 	if err == nil {
 		ret.ConfigFile = configInfo
 	} else {
@@ -74,7 +74,7 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	if ok {
 		kubeConfigPath = p
 	}
-	kubeConfigInfo, err := MakeHostFileInfo(kubeConfigPath, false)
+	kubeConfigInfo, err := makeHostFileInfo(kubeConfigPath, false)
 	if err == nil {
 		ret.KubeConfigFile = kubeConfigInfo
 	} else {
@@ -94,7 +94,7 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 		}
 	}
 	if caFilePath != "" {
-		caInfo, err := MakeHostFileInfo(caFilePath, false)
+		caInfo, err := makeHostFileInfo(caFilePath, false)
 		if err == nil {
 			ret.ClientCAFile = caInfo
 		} else {
