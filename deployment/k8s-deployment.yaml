@@ -36,10 +36,10 @@ spec:
         effect: NoSchedule
       containers:
       - name: host-sensor
-        image: quay.io/kubescape/host-scanner:latest
+        image: imagescanner:latest
         securityContext:
           privileged: true
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: false
           procMount: Unmasked
         ports:
           - name: http
@@ -55,6 +55,7 @@ spec:
         volumeMounts:
         - mountPath: /host_fs
           name: host-filesystem
+        imagePullPolicy: Never
       terminationGracePeriodSeconds: 120
       dnsPolicy: ClusterFirstWithHostNet
       automountServiceAccountToken: false

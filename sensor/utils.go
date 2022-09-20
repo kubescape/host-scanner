@@ -103,13 +103,44 @@ func MakeFileInfo(filePath string, readContent bool) (*FileInfo, error) {
 	return &ret, nil
 }
 
-// MakeHostFileInfo is a wrapper of `MakeFileInfo` for host files
+// MakeContaineredFileInfo is a wrapper of `MakeChangedRootFileInfo` for container files
+func MakeContaineredFileInfo(filePath string, readContent bool, p *ProcessDetails) (*FileInfo, error) {
+	return MakeChangedRootFileInfo(filePath, readContent, p.RootDir())
+}
+
+// MakeHostFileInfo is a wrapper of `MakeChangedRootFileInfo` for host files
 func MakeHostFileInfo(filePath string, readContent bool) (*FileInfo, error) {
-	obj, err := MakeFileInfo(hostPath(filePath), readContent)
-	if err == nil {
-		obj.Path = filePath
+	return MakeChangedRootFileInfo(filePath, readContent, hostFileSystemDefaultLocation)
+}
+
+// MakeHostFileInfo is a wrapper of `MakeFileInfo` for rootDir/filePath
+func MakeChangedRootFileInfo(filePath string, readContent bool, rootDir string) (*FileInfo, error) {
+	fullPath := path.Join(rootDir, filePath)
+	obj, err := MakeFileInfo(fullPath, readContent)
+
+	if err != nil {
+		return obj, err
 	}
-	return obj, err
+
+	obj.Path = fullPath
+
+	// Username
+	username, err := LookupUsernameByUID(obj.Ownership.UID, rootDir)
+	obj.Ownership.Username = username
+
+	if err != nil {
+		zap.L().Error("MakeHostFileInfo", zap.Error(err))
+	}
+
+	// Groupname
+	groupname, err := LookupGroupnameByGID(obj.Ownership.GID, rootDir)
+	obj.Ownership.Groupname = groupname
+
+	if err != nil {
+		zap.L().Error("MakeHostFileInfo", zap.Error(err))
+	}
+
+	return obj, nil
 }
 
 // makeHostFileInfoVerbose is wrapper of `MakeHostFileInfo` with error logging
