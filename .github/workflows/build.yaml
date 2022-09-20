@@ -39,4 +39,4 @@ jobs:
       - name: Build the Docker image
         run: docker buildx build . --file build/Dockerfile --tag ${{ steps.image-name.outputs.IMAGE_NAME }}:${{ steps.image-version.outputs.IMAGE_VERSION }} --tag ${{ steps.image-name.outputs.IMAGE_NAME }}:latest --push --platform linux/amd64,linux/arm64
         env: 
-          CGO_ENABLED:0
+          CGO_ENABLED: 0
