@@ -34,9 +34,9 @@ jobs:
       - name: Run UnitTest
         run: go test -v ./...
         env: 
-          CGO_ENABLED:0
+          CGO_ENABLED: 0
       
       - name: Test go build
         run: go build
         env: 
-          CGO_ENABLED:0 
+          CGO_ENABLED: 0 
