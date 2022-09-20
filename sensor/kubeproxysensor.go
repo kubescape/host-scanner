@@ -30,7 +30,7 @@ func SenseKubeProxyInfo() (*KubeProxyInfo, error) {
 	}
 
 	// kubeconfig
-	kubeConfigPath, ok := proc.GetArg("--config")
+	kubeConfigPath, ok := proc.GetArg(kubeConfigArgName)
 	if ok {
 		kubeConfigInfo, err := makeContaineredFileInfo(kubeConfigPath, false, proc)
 		ret.KubeConfigFile = kubeConfigInfo
