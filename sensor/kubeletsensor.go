@@ -16,6 +16,7 @@ const (
 	// Default paths
 	kubeletConfigDefaultPath     = "/var/lib/kubelet/config.yaml"
 	kubeletKubeConfigDefaultPath = "/etc/kubernetes/kubelet.conf"
+	kubeletCNIConfigFolder       = "/etc/cni/"
 )
 
 // KubeletInfo holds information about kubelet
@@ -28,6 +29,8 @@ type KubeletInfo struct {
 
 	// Information about the client ca file of kubelet (if exist)
 	ClientCAFile *FileInfo `json:"clientCAFile,omitempty"`
+
+	CNIFiles []*FileInfo `json:"CNIFiles,omitempty"`
 
 	// Raw cmd line of kubelet process
 	CmdLine string `json:"cmdLine"`
@@ -103,6 +106,16 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 				zap.Error(err),
 			)
 		}
+	}
+
+	CNIConfigInfo, err := makeHostDirFilesInfo(kubeletCNIConfigFolder, true, nil, 0)
+	ret.CNIFiles = CNIConfigInfo
+
+	if err != nil {
+		zap.L().Debug("SenseKubeletInfo failed to  makeHostDirFilesInfo for kubelet CNI files",
+			zap.String("path", kubeletCNIConfigFolder),
+			zap.Error(err),
+		)
 	}
 
 	// Cmd line
