@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	// CRIContainerdSuffix = "containerd.sock"
+
 	apiServerExe         = "/kube-apiserver"
 	controllerManagerExe = "/kube-controller-manager"
 	schedulerExe         = "/kube-scheduler"
@@ -43,6 +45,9 @@ type ControlPlaneInfo struct {
 	AdminConfigFile       *FileInfo       `json:"adminConfigFile,omitempty"`
 	PKIDIr                *FileInfo       `json:"PKIDir,omitempty"`
 	PKIFiles              []*FileInfo     `json:"PKIFiles,omitempty"`
+	CNIPathsSource        string          `json:"CNIPathsSource,omitempty"`
+	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles"`
+	CNIConfigPath         string          `json:"CNIConfigPath,omitempty"`
 }
 
 // K8sProcessInfo holds information about a k8s process
@@ -184,6 +189,35 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		)
 	}
 
+	// *** Start handling CNI Files
+	cni_paths, err := getContainerRuntimeCNIPaths()
+
+	if err != nil {
+		zap.L().Error("SenseControlPlaneInfo Failed to get CNI paths", zap.Error(ErrCRNotFound))
+	} else {
+
+		//Getting CNI config files
+		CNIConfigInfo, err := makeHostDirFilesInfo(cni_paths.Conf_dir, true, nil, 0)
+		ret.CNIConfigFiles = CNIConfigInfo
+		ret.CNIPathsSource = cni_paths.Source
+		ret.CNIConfigPath = cni_paths.Conf_dir
+
+		if err != nil {
+			zap.L().Debug("SenseControlPlaneInfo failed to  makeHostDirFilesInfo for CNI Config files",
+				zap.String("path", cni_paths.Conf_dir),
+				zap.Error(err),
+			)
+		} else {
+			if len(CNIConfigInfo) == 0 {
+				zap.L().Debug("SenseControlPlaneInfo - no cni config files were found.",
+					zap.String("path", cni_paths.Conf_dir),
+					zap.Error(err),
+				)
+			}
+		}
+
+	}
+
 	// If wasn't able to find any data - this is not a control plane
 	if ret.APIServerInfo == nil &&
 		ret.ControllerManagerInfo == nil &&
@@ -192,7 +226,8 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		ret.EtcdDataDir == nil &&
 		ret.AdminConfigFile == nil &&
 		ret.PKIDIr == nil &&
-		ret.PKIFiles == nil {
+		ret.PKIFiles == nil &&
+		ret.CNIConfigFiles == nil {
 		return nil, &SenseError{
 			Massage:  "not a control plane node",
 			Function: "SenseControlPlaneInfo",
