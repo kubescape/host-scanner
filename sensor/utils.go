@@ -122,10 +122,10 @@ func makeChangedRootFileInfo(filePath string, readContent bool, rootDir string) 
 		return obj, err
 	}
 
-	obj.Path = fullPath
+	obj.Path = filePath
 
 	// Username
-	username, err := lookupUsernameByUID(obj.Ownership.UID, rootDir)
+	username, err := getUserName(obj.Ownership.UID, rootDir)
 	obj.Ownership.Username = username
 
 	if err != nil {
@@ -133,7 +133,7 @@ func makeChangedRootFileInfo(filePath string, readContent bool, rootDir string) 
 	}
 
 	// Groupname
-	groupname, err := LookupGroupnameByGID(obj.Ownership.GID, rootDir)
+	groupname, err := getGroupName(obj.Ownership.GID, rootDir)
 	obj.Ownership.Groupname = groupname
 
 	if err != nil {

@@ -7,6 +7,51 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetUserName(t *testing.T) {
+	userGroupCache = map[string]userGroupCacheItem{}
+	// regular
+	t.Run("regular", func(t *testing.T) {
+		name, _ := getUserName(0, "testdata")
+		assert.Equal(t, "root", name)
+		assert.Contains(t, userGroupCache, "testdata")
+		assert.Contains(t, userGroupCache["testdata"].users, "0")
+		assert.Equal(t, "root", userGroupCache["testdata"].users["0"])
+	})
+
+	// cached
+	t.Run("cached", func(t *testing.T) {
+		userGroupCache["foo"] = userGroupCacheItem{
+			users:  map[string]string{"0": "bar"},
+			groups: map[string]string{},
+		}
+		name, _ := getUserName(0, "foo")
+		assert.Equal(t, "bar", name)
+	})
+}
+
+func TestGetGroupName(t *testing.T) {
+	userGroupCache = map[string]userGroupCacheItem{}
+
+	// regular
+	t.Run("regular", func(t *testing.T) {
+		name, _ := getGroupName(0, "testdata")
+		assert.Equal(t, "root", name)
+		assert.Contains(t, userGroupCache, "testdata")
+		assert.Contains(t, userGroupCache["testdata"].groups, "0")
+		assert.Equal(t, "root", userGroupCache["testdata"].groups["0"])
+	})
+
+	// cached
+	t.Run("cached", func(t *testing.T) {
+		userGroupCache["foo"] = userGroupCacheItem{
+			users:  map[string]string{},
+			groups: map[string]string{"0": "bar"},
+		}
+		name, _ := getGroupName(0, "foo")
+		assert.Equal(t, "bar", name)
+	})
+}
+
 func Test_LookupUsernameByUID(t *testing.T) {
 	uid_tests := []struct {
 		name        string
