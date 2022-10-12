@@ -9,20 +9,18 @@ import (
 )
 
 const (
-	// CRIContainerdSuffix = "containerd.sock"
-
-	apiServerExe         = "/kube-apiserver"
-	controllerManagerExe = "/kube-controller-manager"
-	schedulerExe         = "/kube-scheduler"
-	etcdExe              = "/etcd"
-	etcdDataDirArg       = "--data-dir"
+	apiServerExe                   = "/kube-apiserver"
+	controllerManagerExe           = "/kube-controller-manager"
+	schedulerExe                   = "/kube-scheduler"
+	etcdExe                        = "/etcd"
+	etcdDataDirArg                 = "--data-dir"
+	apiEncryptionProviderConfigArg = "--encryption-provider-config"
 
 	// Default files paths according to https://workbench.cisecurity.org/benchmarks/8973/sections/1126652
 	apiServerSpecsPath          = "/etc/kubernetes/manifests/kube-apiserver.yaml"
 	controllerManagerSpecsPath  = "/etc/kubernetes/manifests/kube-controller-manager.yaml"
 	controllerManagerConfigPath = "/etc/kubernetes/controller-manager.conf"
 	schedulerSpecsPath          = "/etc/kubernetes/manifests/kube-scheduler.yaml"
-	schedulerKubeConfigPath     = "/etc/kubernetes/scheduler.conf"
 	schedulerConfigPath         = "/etc/kubernetes/scheduler.conf"
 	etcdConfigPath              = "/etc/kubernetes/manifests/etcd.yaml"
 	adminConfigPath             = "/etc/kubernetes/admin.conf"
@@ -37,7 +35,7 @@ var (
 
 // KubeProxyInfo holds information about kube-proxy process
 type ControlPlaneInfo struct {
-	APIServerInfo         *K8sProcessInfo `json:"APIServerInfo,omitempty"`
+	APIServerInfo         *ApiServerInfo  `json:"APIServerInfo,omitempty"`
 	ControllerManagerInfo *K8sProcessInfo `json:"controllerManagerInfo,omitempty"`
 	SchedulerInfo         *K8sProcessInfo `json:"schedulerInfo,omitempty"`
 	EtcdConfigFile        *FileInfo       `json:"etcdConfigFile,omitempty"`
@@ -66,6 +64,11 @@ type K8sProcessInfo struct {
 
 	// Raw cmd line of the process
 	CmdLine string `json:"cmdLine"`
+}
+
+type ApiServerInfo struct {
+	EncryptionProviderConfigFile *FileInfo `json:"encryptionProviderConfigFile,omitempty"`
+	*K8sProcessInfo              `json:",inline"`
 }
 
 // getEtcdDataDir find the `data-dir` path of etcd k8s component
@@ -124,6 +127,22 @@ func makeProcessInfoVerbose(p *ProcessDetails, specsPath, configPath, kubeConfig
 	return &ret
 }
 
+// makeAPIserverEncryptionProviderConfigFile returns a FileInfo object for the encryption provider config file of the API server. Required for https://workbench.cisecurity.org/sections/1126663/recommendations/1838675
+func makeAPIserverEncryptionProviderConfigFile(p *ProcessDetails) *FileInfo {
+	encryptionProviderConfigPath, ok := p.GetArg(apiEncryptionProviderConfigArg)
+	if !ok {
+		zap.L().Warn("failed to find encryption provider config path", zap.String("in", "makeAPIserverEncryptionProviderConfigFile"))
+		return nil
+	}
+
+	fi, err := makeContaineredFileInfo(encryptionProviderConfigPath, true, p)
+	if err != nil {
+		zap.L().Warn("failed to create encryption provider config file info", zap.Error(err))
+		return nil
+	}
+	return fi
+}
+
 // SenseControlPlaneInfo return `ControlPlaneInfo`
 func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	var err error
@@ -146,7 +165,9 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
 	}
 
-	ret.APIServerInfo = makeProcessInfoVerbose(apiProc, apiServerSpecsPath, "", "", "")
+	ret.APIServerInfo = &ApiServerInfo{}
+	ret.APIServerInfo.K8sProcessInfo = makeProcessInfoVerbose(apiProc, apiServerSpecsPath, "", "", "")
+	ret.APIServerInfo.EncryptionProviderConfigFile = makeAPIserverEncryptionProviderConfigFile(apiProc)
 	ret.ControllerManagerInfo = makeProcessInfoVerbose(controllerMangerProc, controllerManagerSpecsPath, controllerManagerConfigPath, "", "")
 	ret.SchedulerInfo = makeProcessInfoVerbose(SchedulerProc, schedulerSpecsPath, schedulerConfigPath, "", "")
 
@@ -219,7 +240,7 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	}
 
 	// If wasn't able to find any data - this is not a control plane
-	if ret.APIServerInfo == nil &&
+	if ret.APIServerInfo.K8sProcessInfo == nil &&
 		ret.ControllerManagerInfo == nil &&
 		ret.SchedulerInfo == nil &&
 		ret.EtcdConfigFile == nil &&

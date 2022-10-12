@@ -29,6 +29,73 @@ type lineFunc func(line []byte) (v any, err error)
 const userFile = "/etc/passwd"
 const groupFile = "/etc/group"
 
+var (
+	userGroupCache = map[string]userGroupCacheItem{} // map[rootDir]struct{users, groups}
+)
+
+type userGroupCacheItem struct {
+	users  map[string]string
+	groups map[string]string
+}
+
+// getUserName checks if uid is cached, if not, it tries to find it in a users file {root}/etc/passwd.
+func getUserName(uid int64, root string) (string, error) {
+
+	// return from cache if exists
+	if users, ok := userGroupCache[root]; ok {
+		if username, ok := users.users[strconv.Itoa(int(uid))]; ok {
+			return username, nil
+		}
+	}
+
+	// find username in a users file
+	username, err := lookupUsernameByUID(uid, root)
+	if err != nil {
+		return "", err
+	}
+
+	// cache username
+	if _, ok := userGroupCache[root]; !ok {
+		userGroupCache[root] = userGroupCacheItem{
+			users:  map[string]string{},
+			groups: map[string]string{},
+		}
+	}
+
+	userGroupCache[root].users[strconv.Itoa(int(uid))] = username
+
+	return username, nil
+}
+
+// getGroupName checks if gid is cached, if not, it tries to find it in a group file {root}/etc/group.
+func getGroupName(gid int64, root string) (string, error) {
+
+	// return from cache if exists
+	if users, ok := userGroupCache[root]; ok {
+		if groupname, ok := users.groups[strconv.Itoa(int(gid))]; ok {
+			return groupname, nil
+		}
+	}
+
+	// find groupname in a group file
+	groupname, err := LookupGroupnameByGID(gid, root)
+	if err != nil {
+		return "", err
+	}
+
+	// cache groupname
+	if _, ok := userGroupCache[root]; !ok {
+		userGroupCache[root] = userGroupCacheItem{
+			users:  map[string]string{},
+			groups: map[string]string{},
+		}
+	}
+
+	userGroupCache[root].groups[strconv.Itoa(int(gid))] = groupname
+
+	return groupname, nil
+}
+
 // returns *Group object if gid was found in a group file {root}/etc/group, otherwise returns nil.
 func lookupGroup(gid string, root string) (*user.Group, error) {
 	filePath := root + groupFile
@@ -72,5 +139,4 @@ func lookupUsernameByUID(uid int64, root string) (string, error) {
 	}
 
 	return userData.Username, nil
-
 }
