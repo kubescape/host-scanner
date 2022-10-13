@@ -11,7 +11,7 @@ import (
 const (
 	procDirName                     = "/proc"
 	kubeletProcessSuffix            = "/kubelet"
-	kubeletConfigArgName            = "--kubeconfig"
+	kubeletConfigArgName            = "--config"
 	kubeletClientCAArgName          = "--client-ca-file"
 	kubeletContainerRuntime         = "--container-runtime"
 	kubeletContainerRuntimeEndPoint = "--container-runtime-endpoint"
