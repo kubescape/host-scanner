@@ -34,7 +34,7 @@ func Test_getContainerdCNIPaths(t *testing.T) {
 		},
 	}
 
-	crp, err := getContainerRuntimeProperties(CONTAINERD_CONTAINER_RUNTIME_NAME)
+	crp, err := getContainerRuntimeProperties(containerdContainerRuntimeName)
 	assert.NoError(t, err)
 	cr, err := NewContainerRuntime(*crp, "")
 	for _, tt := range uid_tests {
@@ -85,7 +85,7 @@ func Test_getCrioCNIPaths(t *testing.T) {
 		},
 	}
 
-	crp, err := getContainerRuntimeProperties(CRIO_CONTAINER_RUNTIME_NAME)
+	crp, err := getContainerRuntimeProperties(crioContainerRuntimeName)
 	assert.NoError(t, err)
 	cr, err := NewContainerRuntime(*crp, "")
 

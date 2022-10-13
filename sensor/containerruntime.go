@@ -31,18 +31,18 @@ type CNIPaths struct {
 //Constant values for different types of Container Runtimes
 const (
 	//container runtimes
-	CONTAINERD_CONTAINER_RUNTIME_NAME = "containerd"
-	CONTAINERD_SOCK                   = "/containerd.sock"
-	CONTAINERD_CONFIG_SECTION         = "io.containerd.grpc.v1.cri"
+	containerdContainerRuntimeName = "containerd"
+	containerdSock                 = "/containerd.sock"
+	containerdConfigSection        = "io.containerd.grpc.v1.cri"
 
-	CRIO_CONTAINER_RUNTIME_NAME = "crio"
-	CRIO_SOCK                   = "/crio.sock"
+	crioContainerRuntimeName = "crio"
+	crioSock                 = "/crio.sock"
 
-	DOCKERSHIM_SOCK = "/dockershim.sock"
+	dockershimSock = "/dockershim.sock"
 
 	//container runtime interfaces
-	CRIDOCKERD_CONTAINER_RUNTIME_NAME = "cri-dockerd"
-	CRIDOCKERD_SOCK                   = "/cri-dockerd.sock"
+	cridockerdContainerRuntimeName = "cri-dockerd"
+	cridockerdSock                 = "/cri-dockerd.sock"
 )
 
 //General properties for container runtimes
@@ -86,7 +86,7 @@ type containerRuntimeProperties struct {
 //list of container runtime properties.
 var containersRuntimeProperties = []containerRuntimeProperties{
 	{
-		Name:                   CONTAINERD_CONTAINER_RUNTIME_NAME,
+		Name:                   containerdContainerRuntimeName,
 		Supported:              true,
 		ConfigSupported:        true,
 		DefaultConfigPath:      "/etc/containerd/config.toml",
@@ -100,7 +100,7 @@ var containersRuntimeProperties = []containerRuntimeProperties{
 		ParseCNIFromConfigFunc: parseCNIPathsFromConfig_containerd,
 	},
 	{
-		Name:                   CRIO_CONTAINER_RUNTIME_NAME,
+		Name:                   crioContainerRuntimeName,
 		Supported:              true,
 		ConfigSupported:        true,
 		DefaultConfigPath:      "/etc/crio/crio.conf",
@@ -114,7 +114,7 @@ var containersRuntimeProperties = []containerRuntimeProperties{
 		ParseCNIFromConfigFunc: parseCNIPathsFromConfig_crio,
 	},
 	{
-		Name:                   CRIDOCKERD_CONTAINER_RUNTIME_NAME,
+		Name:                   cridockerdContainerRuntimeName,
 		Supported:              true,
 		ConfigSupported:        false,
 		DefaultConfigPath:      "",
@@ -468,7 +468,7 @@ func getContainerRuntimeFromProcess(takeLastIfMultiple bool) (*ContainerRuntimeI
 	lastObj := &ContainerRuntimeInfo{}
 
 	for _, crp := range containersRuntimeProperties {
-		if crp.Supported && crp.Name != CRIDOCKERD_CONTAINER_RUNTIME_NAME {
+		if crp.Supported && crp.Name != cridockerdContainerRuntimeName {
 			cr_obj, err := NewContainerRuntime(crp, hostFileSystemDefaultLocation)
 			if err == nil {
 				sumProcess += 1
@@ -519,9 +519,9 @@ func parseCNIPathsFromConfig_containerd(configPath string) (*CNIPaths, error) {
 		return &cni_paths, err
 	}
 
-	cni_paths.Conf_dir = cni_config.Plug[CONTAINERD_CONFIG_SECTION].CR_Plugin.Conf_dir
+	cni_paths.Conf_dir = cni_config.Plug[containerdConfigSection].CR_Plugin.Conf_dir
 
-	bin_dirs := cni_config.Plug[CONTAINERD_CONFIG_SECTION].CR_Plugin.Bin_dir
+	bin_dirs := cni_config.Plug[containerdConfigSection].CR_Plugin.Bin_dir
 
 	if bin_dirs != "" {
 		cni_paths.Bin_dirs = append(cni_paths.Bin_dirs, bin_dirs)
@@ -604,9 +604,9 @@ func CNIPathsFromKubelet() (*CNIPaths, error) {
 			// Check specific case where the end point is cri-dockerd. If so, then in the absence of cni paths configuration for cri-dockerd process,
 			// we check containerd (which is using cri-dockerd as a CRI plugin)
 
-			if cr_obj.properties.Name == CRIDOCKERD_CONTAINER_RUNTIME_NAME {
+			if cr_obj.properties.Name == cridockerdContainerRuntimeName {
 
-				cr_obj, err := getContainerRuntime(CONTAINERD_SOCK)
+				cr_obj, err := getContainerRuntime(containerdSock)
 
 				if err == nil {
 					cni_paths := cr_obj.getCNIPaths()
