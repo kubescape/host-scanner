@@ -15,19 +15,6 @@ const (
 	CNIDefaultBinDir    string = "/opt/cni/bin/"
 )
 
-//CNIPath struct
-type CNIPaths struct {
-
-	//Where we found the paths. Currently not in use.
-	Source string `json:"Source,omitempty"`
-
-	//The location of the CNI config files
-	Conf_dir string `json:"CNIPathsConfigDir,omitempty"`
-
-	//The location(s) of the binaries. It is a list because some of the CRs configure more than one dir as list.
-	Bin_dirs []string `json:"CNIPathsBinDirs,omitempty"`
-}
-
 //Constant values for different types of Container Runtimes
 const (
 	//container runtimes
@@ -44,6 +31,19 @@ const (
 	cridockerdContainerRuntimeName = "cri-dockerd"
 	cridockerdSock                 = "/cri-dockerd.sock"
 )
+
+//CNIPath struct
+type CNIPaths struct {
+
+	//Where we found the paths. Currently not in use.
+	Source string `json:"Source,omitempty"`
+
+	//The location of the CNI config files
+	Conf_dir string `json:"CNIPathsConfigDir,omitempty"`
+
+	//The location(s) of the binaries. It is a list because some of the CRs configure more than one dir as list.
+	Bin_dirs []string `json:"CNIPathsBinDirs,omitempty"`
+}
 
 //General properties for container runtimes
 type containerRuntimeProperties struct {
@@ -81,6 +81,28 @@ type containerRuntimeProperties struct {
 
 	//extract CNI info function
 	ParseCNIFromConfigFunc func(string) (*CNIPaths, error)
+}
+
+// Struct to hold configurations of the container runtime
+// Currently holds only CNIPaths, can be later expanded to additional properties.
+type containerRuntimeConfigurations struct {
+
+	//CNI files paths
+	CNI_files *CNIPaths
+}
+
+//Struct to hold all information of a container runtime
+type ContainerRuntimeInfo struct {
+	properties *containerRuntimeProperties
+
+	// process pointer
+	process *ProcessDetails
+
+	//CR onfig information if exist.
+	config containerRuntimeConfigurations
+
+	//root
+	rootDir string
 }
 
 //list of container runtime properties.
@@ -127,27 +149,6 @@ var containersRuntimeProperties = []containerRuntimeProperties{
 		CNIPluginDirArgName:    "--cni-bin-dir",
 		ParseCNIFromConfigFunc: parseCNIPathsFromConfig_cridockerd,
 	},
-}
-
-//Return container runtime properties by name
-func getContainerRuntimeProperties(containerRuntimeName string) (*containerRuntimeProperties, error) {
-	for _, crp := range containersRuntimeProperties {
-		if crp.Name == containerRuntimeName {
-			return &crp, nil
-		}
-	}
-
-	return nil, fmt.Errorf("ContainerRuntimeName %s not found", containerRuntimeName)
-}
-
-//Get container runtime end point (i.e. [name].sock) and returns container runtime object if supported / exists.
-func getContainerRuntime(crEndpoint string) (*ContainerRuntimeInfo, error) {
-	for _, crp := range containersRuntimeProperties {
-		if strings.HasSuffix(crEndpoint, crp.Socket) && crp.Supported {
-			return NewContainerRuntime(crp, hostFileSystemDefaultLocation)
-		}
-	}
-	return nil, fmt.Errorf("getContainerRuntime End point '%s' is not supported", crEndpoint)
 }
 
 //Get default CNIPaths - in use in case we couldnt find the paths through configs.
@@ -198,31 +199,6 @@ func getContainerRuntimeCNIPaths() *CNIPaths {
 
 }
 
-// Struct to hold config file information of the container runtime
-// Currently holds only CNIPaths, can be later expanded to additional properties.
-type containerRuntimeConfig struct {
-
-	//CNI files paths
-	CNI_files *CNIPaths
-
-	//Currently not in use
-	CNI_files_source string
-}
-
-//Struct to hold all information of a container runtime
-type ContainerRuntimeInfo struct {
-	properties *containerRuntimeProperties
-
-	// process pointer
-	process *ProcessDetails
-
-	//CR onfig information if exist.
-	config containerRuntimeConfig
-
-	//root
-	rootDir string
-}
-
 //Get/Set functions
 func (cr *ContainerRuntimeInfo) getDefaultConfigPath() string {
 	return cr.properties.DefaultConfigPath
@@ -241,8 +217,7 @@ func (cr *ContainerRuntimeInfo) getConfigDirPath() string {
 	configDirPath := cr.getArgFromProcess(cr.properties.ConfigDirArgName)
 
 	if configDirPath == "" {
-		configDirPath = cr.properties.DefaultConfigDir
-		configDirPath = path.Join(cr.rootDir, configDirPath)
+		configDirPath = path.Join(cr.rootDir, cr.properties.DefaultConfigDir)
 	}
 
 	return configDirPath
@@ -372,16 +347,6 @@ func (cr *ContainerRuntimeInfo) getCNIPathsFromProcess() *CNIPaths {
 
 }
 
-// //Find process by container runtime process suffix
-// func (cr *ContainerRuntimeInfo) locateProcess() (*ProcessDetails, error) {
-// 	p, err := LocateProcessByExecSuffix(cr.properties.ProcessSuffix)
-
-// 	if err == nil {
-// 		cr.process = p
-// 	}
-// 	return p, err
-// }
-
 // update CNI paths property. Flow:
 // 1. Try to get paths from process flags. If not found:
 // 2. Try to get paths from config file. If not found:
@@ -458,6 +423,27 @@ func NewContainerRuntime(properties containerRuntimeProperties, root_dir string)
 
 	return cr, nil
 
+}
+
+//Return container runtime properties by name
+func getContainerRuntimeProperties(containerRuntimeName string) (*containerRuntimeProperties, error) {
+	for _, crp := range containersRuntimeProperties {
+		if crp.Name == containerRuntimeName {
+			return &crp, nil
+		}
+	}
+
+	return nil, fmt.Errorf("ContainerRuntimeName %s not found", containerRuntimeName)
+}
+
+//Get container runtime end point (i.e. [name].sock) and returns container runtime object if supported / exists.
+func getContainerRuntime(crEndpoint string) (*ContainerRuntimeInfo, error) {
+	for _, crp := range containersRuntimeProperties {
+		if strings.HasSuffix(crEndpoint, crp.Socket) && crp.Supported {
+			return NewContainerRuntime(crp, hostFileSystemDefaultLocation)
+		}
+	}
+	return nil, fmt.Errorf("getContainerRuntime End point '%s' is not supported", crEndpoint)
 }
 
 // Try to get CNI paths from CR process.
@@ -657,25 +643,5 @@ func getCNIPathsFromConfigPaths(configPaths []string, parseFunc func(string) (*C
 	}
 
 	return &CNIPaths{}
-
-}
-
-//get the full path of files within folder.
-//config params priority done by files names (i.e. 01_bla.conf has lower priority than 05_bla.conf) therefore files are sorted decending.
-func makeConfigFilesList(dir string) []string {
-	var configDirFilesFullPath []string
-
-	configDirFiles, err := getFilesList(dir, false)
-
-	if err != nil {
-		zap.L().Debug("makeConfigFilesList - failed to get config directory files",
-			zap.Error(err))
-	} else {
-		for _, filename := range configDirFiles {
-			configDirFilesFullPath = append(configDirFilesFullPath, path.Join(dir, filename))
-		}
-	}
-
-	return configDirFilesFullPath
 
 }

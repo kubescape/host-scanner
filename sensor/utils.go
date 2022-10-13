@@ -242,31 +242,22 @@ func getFilesList(dir string, asc bool) ([]string, error) {
 	return filenames_ls, nil
 }
 
-// // Get a directory and returns the full path of all files. asc for ascending or decending order.
-// func FilesFullPath(dir string, asc bool) ([]string, error) {
-// 	var filenames_ls []string
-// 	var fullpaths []string
-// 	// dir = path.Join(root_dir, dir)
-// 	filepath.Walk(dir, func(dir string, info os.FileInfo, err error) error {
+//get the full path of files within folder.
+//config params priority done by files names (i.e. 01_bla.conf has lower priority than 05_bla.conf) therefore files are sorted decending.
+func makeConfigFilesList(dir string) []string {
+	var configDirFilesFullPath []string
 
-// 		if err == nil {
-// 			if !info.IsDir() {
-// 				filenames_ls = append(filenames_ls, info.Name())
-// 			}
-// 		} else {
-// 			return err
-// 		}
+	configDirFiles, err := getFilesList(dir, false)
 
-// 		return nil
-// 	})
+	if err != nil {
+		zap.L().Debug("makeConfigFilesList - failed to get config directory files",
+			zap.Error(err))
+	} else {
+		for _, filename := range configDirFiles {
+			configDirFilesFullPath = append(configDirFilesFullPath, path.Join(dir, filename))
+		}
+	}
 
-// 	if asc == false {
-// 		sort.Sort(sort.Reverse(sort.StringSlice(filenames_ls)))
-// 	}
+	return configDirFilesFullPath
 
-// 	for _, filename := range filenames_ls {
-// 		fullpaths = append(fullpaths, path.Join(dir, filename))
-// 	}
-
-// 	return fullpaths, nil
-// }
+}
