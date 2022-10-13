@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	kubeConfigArgName = "--config"
+	kubeConfigArgName = "--kubeconfig"
 	maxRecursionDepth = 10
 )
 
