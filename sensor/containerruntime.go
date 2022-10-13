@@ -55,11 +55,11 @@ type containerRuntimeProperties struct {
 	//whether container runtime supports config files (cri-dockerd is an example doesn't support it)
 	ConfigSupported bool
 
-	//Process param for custom config file.
-	ConfigParam string
+	//Process for cuflag stom config file.
+	ConfigArgName string
 
-	//Process param for custom configuration directory.
-	ConfigDirParam string
+	//Process flag for custom configuration directory.
+	ConfigDirArgName string
 
 	//Default config path
 	DefaultConfigPath string
@@ -74,10 +74,10 @@ type containerRuntimeProperties struct {
 	Socket string
 
 	//process pararm for CNI configuration directory
-	CNIConfigDirParam string
+	CNIConfigDirArgName string
 
-	//Process param for CNI plugins directory
-	CNIPluginDirParam string
+	//Process flag for CNI plugins directory
+	CNIPluginDirArgName string
 
 	//extract CNI info function
 	ParseCNIFromConfigFunc func(string) (*CNIPaths, error)
@@ -92,11 +92,11 @@ var containersRuntimeProperties = []containerRuntimeProperties{
 		DefaultConfigPath:      "/etc/containerd/config.toml",
 		ProcessSuffix:          "/containerd",
 		Socket:                 "/containerd.sock",
-		ConfigParam:            "--config",
-		ConfigDirParam:         "",
+		ConfigArgName:          "--config",
+		ConfigDirArgName:       "",
 		DefaultConfigDir:       "/etc/containerd/containerd.conf.d",
-		CNIConfigDirParam:      "",
-		CNIPluginDirParam:      "",
+		CNIConfigDirArgName:    "",
+		CNIPluginDirArgName:    "",
 		ParseCNIFromConfigFunc: parseCNIPathsFromConfig_containerd,
 	},
 	{
@@ -106,11 +106,11 @@ var containersRuntimeProperties = []containerRuntimeProperties{
 		DefaultConfigPath:      "/etc/crio/crio.conf",
 		ProcessSuffix:          "/crio",
 		Socket:                 "/crio.sock",
-		ConfigParam:            "--config",
-		ConfigDirParam:         "--config-dir",
+		ConfigArgName:          "--config",
+		ConfigDirArgName:       "--config-dir",
 		DefaultConfigDir:       "/etc/crio/crio.conf.d",
-		CNIConfigDirParam:      "--cni-config-dir",
-		CNIPluginDirParam:      "--cni-plugin-dir",
+		CNIConfigDirArgName:    "--cni-config-dir",
+		CNIPluginDirArgName:    "--cni-plugin-dir",
 		ParseCNIFromConfigFunc: parseCNIPathsFromConfig_crio,
 	},
 	{
@@ -120,11 +120,11 @@ var containersRuntimeProperties = []containerRuntimeProperties{
 		DefaultConfigPath:      "",
 		ProcessSuffix:          "/cri-dockerd",
 		Socket:                 "/cri-dockerd.sock",
-		ConfigParam:            "",
-		ConfigDirParam:         "",
+		ConfigArgName:          "",
+		ConfigDirArgName:       "",
 		DefaultConfigDir:       "",
-		CNIConfigDirParam:      "--cni-conf-dir",
-		CNIPluginDirParam:      "--cni-bin-dir",
+		CNIConfigDirArgName:    "--cni-conf-dir",
+		CNIPluginDirArgName:    "--cni-bin-dir",
 		ParseCNIFromConfigFunc: parseCNIPathsFromConfig_cridockerd,
 	},
 }
@@ -157,7 +157,7 @@ func getCNIPathsDefault() *CNIPaths {
 }
 
 // Get CNI paths from running Container Runtimes. Flow:
-// 1. Find CNI through kubelet params (--container-runtime_endpoint). If not found:
+// 1. Find CNI through kubelet flag (--container-runtime_endpoint). If not found:
 // 2. Find CNI through process of supported container runtimes. If not found:
 // 3. return CNI default paths.
 func getContainerRuntimeCNIPaths() *CNIPaths {
@@ -238,7 +238,7 @@ func (cr *ContainerRuntimeInfo) setProperties(properies *containerRuntimePropert
 
 // get config directory. First try through process, if wasn't found taking default.
 func (cr *ContainerRuntimeInfo) getConfigDirPath() string {
-	configDirPath := cr.getArgFromProcess(cr.properties.ConfigDirParam)
+	configDirPath := cr.getArgFromProcess(cr.properties.ConfigDirArgName)
 
 	if configDirPath == "" {
 		configDirPath = cr.properties.DefaultConfigDir
@@ -249,7 +249,7 @@ func (cr *ContainerRuntimeInfo) getConfigDirPath() string {
 }
 
 func (cr *ContainerRuntimeInfo) getConfigPath() string {
-	configPath := cr.getArgFromProcess(cr.properties.ConfigParam)
+	configPath := cr.getArgFromProcess(cr.properties.ConfigArgName)
 	if configPath == "" {
 		zap.L().Debug("getConfigPath - custom config no found through process, taking default config path",
 			zap.String("CR_name", cr.properties.Name),
@@ -266,14 +266,14 @@ func (cr *ContainerRuntimeInfo) getConfigPath() string {
 	return configPath
 }
 
-func (cr *ContainerRuntimeInfo) getArgFromProcess(param string) string {
-	if param == "" {
+func (cr *ContainerRuntimeInfo) getArgFromProcess(argName string) string {
+	if argName == "" {
 		return ""
 	}
 
 	p := cr.process
 	if p != nil {
-		res, ok := p.GetArg(param)
+		res, ok := p.GetArg(argName)
 		if !ok || res == "" {
 			return ""
 		} else {
@@ -328,7 +328,7 @@ func (cr *ContainerRuntimeInfo) getCNIPathsFromConfig(configPath string) (*CNIPa
 
 }
 
-//Get CNI Paths from process cmdline params if such defined.
+//Get CNI Paths from process cmdline flags if such defined.
 func (cr *ContainerRuntimeInfo) getCNIPathsFromProcess() *CNIPaths {
 	p := cr.process
 	if p == nil {
@@ -340,23 +340,23 @@ func (cr *ContainerRuntimeInfo) getCNIPathsFromProcess() *CNIPaths {
 	var conf_dir string
 	var bin_dirs []string
 
-	if cr.properties.CNIConfigDirParam != "" {
-		conf_dir, ok := p.GetArg(cr.properties.CNIConfigDirParam)
+	if cr.properties.CNIConfigDirArgName != "" {
+		conf_dir, ok := p.GetArg(cr.properties.CNIConfigDirArgName)
 
 		if !ok || conf_dir == "" {
 			zap.L().Debug("getCNIPathsFromProccess no cni config dir found for process",
 				zap.String("ContainerRuntime name", cr.properties.Name),
-				zap.String("CNIConfigDirParam", cr.properties.CNIConfigDirParam))
+				zap.String("CNIConfigDirArgName", cr.properties.CNIConfigDirArgName))
 		}
 	}
 
-	if cr.properties.CNIPluginDirParam != "" {
-		bin_dir, ok := p.GetArg(cr.properties.CNIPluginDirParam)
+	if cr.properties.CNIPluginDirArgName != "" {
+		bin_dir, ok := p.GetArg(cr.properties.CNIPluginDirArgName)
 
 		if !ok || bin_dir == "" {
 			zap.L().Debug("getCNIPathsFromProccess no cni plugin dir found for process",
 				zap.String("ContainerRuntime name", cr.properties.Name),
-				zap.String("CNIConfigDirParam", cr.properties.CNIPluginDirParam))
+				zap.String("CNIConfigDirArgName", cr.properties.CNIPluginDirArgName))
 		} else {
 			if bin_dir != "" {
 				bin_dirs = append(bin_dirs, bin_dir)
@@ -383,7 +383,7 @@ func (cr *ContainerRuntimeInfo) getCNIPathsFromProcess() *CNIPaths {
 // }
 
 // update CNI paths property. Flow:
-// 1. Try to get paths from process params. If not found:
+// 1. Try to get paths from process flags. If not found:
 // 2. Try to get paths from config file. If not found:
 // 3. return defaults
 func (cr *ContainerRuntimeInfo) updateCNIPaths() {
@@ -587,7 +587,7 @@ func CNIPathsFromKubelet() *CNIPaths {
 		if (!crEndPointOK && !crOK) || (cr != "remote") {
 			// From docs: "If your nodes use Kubernetes v1.23 and earlier and these flags aren't present
 			// or if the --container-runtime flag is not remote, you use the dockershim socket with Docker Engine."
-			zap.L().Debug("CNIPathsFromKubelet - no kubelet params or --container-runtime not 'remote' means dockershim.sock which is not supported")
+			zap.L().Debug("CNIPathsFromKubelet - no kubelet flags or --container-runtime not 'remote' means dockershim.sock which is not supported")
 			return nil
 
 		}
