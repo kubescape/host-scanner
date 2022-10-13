@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"sort"
 	"syscall"
 
 	"go.uber.org/zap"
@@ -216,3 +218,55 @@ func makeHostDirFilesInfo(dir string, recursive bool, fileInfos *([]*FileInfo), 
 
 	return *fileInfos, err
 }
+
+func getFilesList(dir string, asc bool) ([]string, error) {
+	var filenames_ls []string
+	// dir = path.Join(root_dir, dir)
+	filepath.Walk(dir, func(dir string, info os.FileInfo, err error) error {
+
+		if err == nil {
+			if !info.IsDir() {
+				filenames_ls = append(filenames_ls, info.Name())
+			}
+		} else {
+			return err
+		}
+
+		return nil
+	})
+
+	if asc == false {
+		sort.Sort(sort.Reverse(sort.StringSlice(filenames_ls)))
+	}
+
+	return filenames_ls, nil
+}
+
+// // Get a directory and returns the full path of all files. asc for ascending or decending order.
+// func FilesFullPath(dir string, asc bool) ([]string, error) {
+// 	var filenames_ls []string
+// 	var fullpaths []string
+// 	// dir = path.Join(root_dir, dir)
+// 	filepath.Walk(dir, func(dir string, info os.FileInfo, err error) error {
+
+// 		if err == nil {
+// 			if !info.IsDir() {
+// 				filenames_ls = append(filenames_ls, info.Name())
+// 			}
+// 		} else {
+// 			return err
+// 		}
+
+// 		return nil
+// 	})
+
+// 	if asc == false {
+// 		sort.Sort(sort.Reverse(sort.StringSlice(filenames_ls)))
+// 	}
+
+// 	for _, filename := range filenames_ls {
+// 		fullpaths = append(fullpaths, path.Join(dir, filename))
+// 	}
+
+// 	return fullpaths, nil
+// }

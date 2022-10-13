@@ -45,7 +45,6 @@ type ControlPlaneInfo struct {
 	AdminConfigFile       *FileInfo       `json:"adminConfigFile,omitempty"`
 	PKIDIr                *FileInfo       `json:"PKIDir,omitempty"`
 	PKIFiles              []*FileInfo     `json:"PKIFiles,omitempty"`
-	CNIPathsSource        string          `json:"CNIPathsSource,omitempty"`
 	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles"`
 	CNIConfigPath         string          `json:"CNIConfigPath,omitempty"`
 }
@@ -199,7 +198,6 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		//Getting CNI config files
 		CNIConfigInfo, err := makeHostDirFilesInfo(cni_paths.Conf_dir, true, nil, 0)
 		ret.CNIConfigFiles = CNIConfigInfo
-		ret.CNIPathsSource = cni_paths.Source
 		ret.CNIConfigPath = cni_paths.Conf_dir
 
 		if err != nil {
