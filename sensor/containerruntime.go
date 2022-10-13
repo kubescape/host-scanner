@@ -18,7 +18,7 @@ const (
 //CNIPath struct
 type CNIPaths struct {
 
-	//Where we found the paths.
+	//Where we found the paths. Currently not in use.
 	Source string `json:"Source,omitempty"`
 
 	//The location of the CNI config files
@@ -160,15 +160,14 @@ func getCNIPathsDefault() *CNIPaths {
 // 1. Find CNI through kubelet params (--container-runtime_endpoint). If not found:
 // 2. Find CNI through process of supported container runtimes. If not found:
 // 3. return CNI default paths.
-func getContainerRuntimeCNIPaths() (*CNIPaths, error) {
+func getContainerRuntimeCNIPaths() *CNIPaths {
 
 	// //Attempting to find CR from kubelet.
-	cni_paths, err := CNIPathsFromKubelet()
+	cni_paths := CNIPathsFromKubelet()
 
-	if err != nil {
+	if cni_paths == nil {
 		//Could construct container runtime from kubelet
-		zap.L().Debug("getContainerRuntimeCNIPaths - failed to get CNI Paths through kubelete, trying through process",
-			zap.Error(err))
+		zap.L().Debug("getContainerRuntimeCNIPaths - failed to get CNI Paths through kubelete, trying through process")
 
 		//Attempting to find CR through process.
 		cr, err := getContainerRuntimeFromProcess(false)
@@ -176,9 +175,9 @@ func getContainerRuntimeCNIPaths() (*CNIPaths, error) {
 		if err == nil {
 			cni_paths := cr.getCNIPaths()
 			if cni_paths == nil {
-				return getCNIPathsDefault(), nil
+				return getCNIPathsDefault()
 			} else {
-				return cni_paths, nil
+				return cni_paths
 			}
 
 		} else {
@@ -186,13 +185,13 @@ func getContainerRuntimeCNIPaths() (*CNIPaths, error) {
 			zap.L().Debug("getContainerRuntimeCNIPaths - failed to get container runtime from process, return cni defaults",
 				zap.Error(err))
 
-			return getCNIPathsDefault(), nil
+			return getCNIPathsDefault()
 		}
 	} else {
 		if cni_paths == nil {
-			return getCNIPathsDefault(), nil
+			return getCNIPathsDefault()
 		} else {
-			return cni_paths, nil
+			return cni_paths
 		}
 
 	}
@@ -206,6 +205,7 @@ type containerRuntimeConfig struct {
 	//CNI files paths
 	CNI_files *CNIPaths
 
+	//Currently not in use
 	CNI_files_source string
 }
 
@@ -300,9 +300,7 @@ func (cr *ContainerRuntimeInfo) getCNIPathsFromConfig(configPath string) (*CNIPa
 
 	//Getting all config files in drop in folder if exist.
 	configDirPath := cr.getConfigDirPath()
-	configDirFilesFullPath, err := makeConfigFilesList(configDirPath)
-
-	fmt.Printf("%+v\n", configDirFilesFullPath)
+	configDirFilesFullPath = makeConfigFilesList(configDirPath)
 
 	if configPath == "" {
 		configPath = cr.getConfigPath()
@@ -313,13 +311,13 @@ func (cr *ContainerRuntimeInfo) getCNIPathsFromConfig(configPath string) (*CNIPa
 		configDirFilesFullPath = append(configDirFilesFullPath, configPath)
 	}
 
-	cni_paths, err := getCNIPathsFromConfigPaths(configDirFilesFullPath, cr.properties.ParseCNIFromConfigFunc)
+	cni_paths := getCNIPathsFromConfigPaths(configDirFilesFullPath, cr.properties.ParseCNIFromConfigFunc)
 
-	if err != nil {
-		zap.L().Debug("getCNIPathsFromConfig - error looking for cni paths from configs",
-			zap.String("CR_name", cr.properties.Name),
-			zap.Error(err))
-	}
+	// if err != nil {
+	// 	zap.L().Debug("getCNIPathsFromConfig - error looking for cni paths from configs",
+	// 		zap.String("CR_name", cr.properties.Name),
+	// 		zap.Error(err))
+	// }
 
 	if cni_paths != nil {
 		zap.L().Debug("getCNIPathsFromConfig - found cni paths in configs for container runtime",
@@ -331,10 +329,12 @@ func (cr *ContainerRuntimeInfo) getCNIPathsFromConfig(configPath string) (*CNIPa
 }
 
 //Get CNI Paths from process cmdline params if such defined.
-func (cr *ContainerRuntimeInfo) getCNIPathsFromProcess() (*CNIPaths, error) {
+func (cr *ContainerRuntimeInfo) getCNIPathsFromProcess() *CNIPaths {
 	p := cr.process
 	if p == nil {
-		return nil, fmt.Errorf("No proccess found for %s", cr.properties.Name)
+		zap.L().Debug("getCNIPathsFromProccess no process found for containe runtime",
+			zap.String("ContainerRuntime name", cr.properties.Name))
+		return nil
 	}
 
 	var conf_dir string
@@ -365,22 +365,22 @@ func (cr *ContainerRuntimeInfo) getCNIPathsFromProcess() (*CNIPaths, error) {
 	}
 
 	if len(bin_dirs) == 0 && conf_dir == "" {
-		return nil, nil
+		return nil
 	} else {
-		return &CNIPaths{Conf_dir: conf_dir, Bin_dirs: bin_dirs}, nil
+		return &CNIPaths{Conf_dir: conf_dir, Bin_dirs: bin_dirs}
 	}
 
 }
 
-//Find process by container runtime process suffix
-func (cr *ContainerRuntimeInfo) locateProcess() (*ProcessDetails, error) {
-	p, err := LocateProcessByExecSuffix(cr.properties.ProcessSuffix)
+// //Find process by container runtime process suffix
+// func (cr *ContainerRuntimeInfo) locateProcess() (*ProcessDetails, error) {
+// 	p, err := LocateProcessByExecSuffix(cr.properties.ProcessSuffix)
 
-	if err == nil {
-		cr.process = p
-	}
-	return p, err
-}
+// 	if err == nil {
+// 		cr.process = p
+// 	}
+// 	return p, err
+// }
 
 // update CNI paths property. Flow:
 // 1. Try to get paths from process params. If not found:
@@ -394,7 +394,7 @@ func (cr *ContainerRuntimeInfo) updateCNIPaths() {
 
 	CR_name := cr.properties.Name
 
-	cni_paths, err = cr.getCNIPathsFromProcess()
+	cni_paths = cr.getCNIPathsFromProcess()
 
 	if cni_paths == nil {
 		zap.L().Debug("updateCNIPaths couldn't get cni paths from process, trying through configs", zap.String("ContainerRuntime", CR_name))
@@ -445,11 +445,13 @@ func NewContainerRuntime(properties containerRuntimeProperties, root_dir string)
 	cr := &ContainerRuntimeInfo{}
 	cr.rootDir = root_dir
 	cr.setProperties(&properties)
-	_, err := cr.locateProcess()
+	p, err := LocateProcessByExecSuffix(cr.properties.ProcessSuffix)
 
 	//if process wasn't find, fail to construct object
 	if err != nil {
 		return cr, fmt.Errorf("NewContainerRuntime - Failed to locate process for %s", cr.properties.Name)
+	} else {
+		cr.process = p
 	}
 
 	cr.updateCNIPaths()
@@ -570,10 +572,11 @@ func parseCNIPathsFromConfig_cridockerd(configPath string) (*CNIPaths, error) {
 
 // Get CNI Paths from container runtime defined for kubelet.
 // Container runtime is expected to be found in --container-runtime-endpoint.
-func CNIPathsFromKubelet() (*CNIPaths, error) {
+func CNIPathsFromKubelet() *CNIPaths {
 	proc, err := LocateProcessByExecSuffix(kubeletProcessSuffix)
 	if err != nil {
-		return nil, fmt.Errorf("failed to locate kube-proxy process: %w", err)
+		zap.L().Debug("CNIPathsFromKubelet - failed to locate kube-proxy process")
+		return nil
 	}
 
 	crEndpoint, crEndPointOK := proc.GetArg(kubeletContainerRuntimeEndPoint)
@@ -584,18 +587,22 @@ func CNIPathsFromKubelet() (*CNIPaths, error) {
 		if (!crEndPointOK && !crOK) || (cr != "remote") {
 			// From docs: "If your nodes use Kubernetes v1.23 and earlier and these flags aren't present
 			// or if the --container-runtime flag is not remote, you use the dockershim socket with Docker Engine."
-			return nil, fmt.Errorf("no kubelet params or --container-runtime not 'remote' means dockershim.sock which is not supported")
+			zap.L().Debug("CNIPathsFromKubelet - no kubelet params or --container-runtime not 'remote' means dockershim.sock which is not supported")
+			return nil
 
 		}
 		//Uknown
-		return nil, ErrCRNotFound
+		zap.L().Debug(ErrCRNotFound.Error())
+		return nil
 
 	}
 	//there is crEndpoint
 	zap.L().Debug("crEndPoint from kubelete found", zap.String("crEndPoint", crEndpoint))
 	cr_obj, err := getContainerRuntime(crEndpoint)
 
-	if err == nil {
+	if err != nil {
+		return nil
+	} else {
 		//Successfully created a Container runtime object. Try to get CNI paths
 		cni_paths := cr_obj.getCNIPaths()
 
@@ -610,21 +617,19 @@ func CNIPathsFromKubelet() (*CNIPaths, error) {
 
 				if err == nil {
 					cni_paths := cr_obj.getCNIPaths()
-					return cni_paths, nil
+					return cni_paths
 				}
 
 			}
 		}
-		return cni_paths, nil
+		return cni_paths
 	}
-
-	return nil, err
 
 }
 
 // Get a list of configpaths and a parsing function and returns CNIPaths.
 // iteration is done by the original order of the configpaths.
-func getCNIPathsFromConfigPaths(configPaths []string, parseFunc func(string) (*CNIPaths, error)) (*CNIPaths, error) {
+func getCNIPathsFromConfigPaths(configPaths []string, parseFunc func(string) (*CNIPaths, error)) *CNIPaths {
 
 	conf_dir := ""
 	bin_dirs := []string{}
@@ -632,7 +637,9 @@ func getCNIPathsFromConfigPaths(configPaths []string, parseFunc func(string) (*C
 	for _, config_path := range configPaths {
 		cni_paths, err := parseFunc(config_path)
 
-		if err == nil {
+		if err != nil {
+			zap.L().Debug("getCNIPathsFromConfigPaths - Failed to parse config file", zap.String("config_path", config_path))
+		} else {
 			if cni_paths.Conf_dir != "" && conf_dir == "" {
 				conf_dir = cni_paths.Conf_dir
 			}
@@ -642,22 +649,20 @@ func getCNIPathsFromConfigPaths(configPaths []string, parseFunc func(string) (*C
 			}
 
 			if conf_dir != "" && len(bin_dirs) > 0 {
-				return &CNIPaths{Conf_dir: conf_dir, Bin_dirs: bin_dirs}, nil
+				return &CNIPaths{Conf_dir: conf_dir, Bin_dirs: bin_dirs}
 			}
 
-		} else {
-			continue
 		}
 
 	}
 
-	return &CNIPaths{}, nil
+	return &CNIPaths{}
 
 }
 
 //get the full path of files within folder.
 //config params priority done by files names (i.e. 01_bla.conf has lower priority than 05_bla.conf) therefore files are sorted decending.
-func makeConfigFilesList(dir string) ([]string, error) {
+func makeConfigFilesList(dir string) []string {
 	var configDirFilesFullPath []string
 
 	configDirFiles, err := getFilesList(dir, false)
@@ -671,6 +676,6 @@ func makeConfigFilesList(dir string) ([]string, error) {
 		}
 	}
 
-	return configDirFilesFullPath, err
+	return configDirFilesFullPath
 
 }

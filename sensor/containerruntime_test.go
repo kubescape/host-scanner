@@ -133,26 +133,26 @@ func Test_getCNIPathsFromPaths_crio(t *testing.T) {
 
 	for _, tt := range uid_tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config_paths, err := makeConfigFilesList(tt.path)
-			assert.NoError(t, err)
+			config_paths := makeConfigFilesList(tt.path)
 
-			cni_paths, err := getCNIPathsFromConfigPaths(config_paths, parseCNIPathsFromConfig_crio)
+			cni_paths := getCNIPathsFromConfigPaths(config_paths, parseCNIPathsFromConfig_crio)
 
 			// if cni_paths != nil {
 			// 	fmt.Printf("%+v\n", cni_paths)
 			// }
 
-			if err != nil {
-				if tt.wantErr {
-					fmt.Println(err)
-				} else {
-					assert.NoError(t, err)
-				}
+			// if err != nil {
+			// 	if tt.wantErr {
+			// 		fmt.Println(err)
+			// 	} else {
+			// 		assert.NoError(t, err)
+			// 	}
 
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, &tt.expectedRes, cni_paths)
-			}
+			// } else {
+			// 	assert.NoError(t, err)
+			// 	assert.Equal(t, &tt.expectedRes, cni_paths)
+			// }
+			assert.Equal(t, &tt.expectedRes, cni_paths)
 
 		})
 	}

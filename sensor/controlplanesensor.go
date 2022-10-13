@@ -210,10 +210,10 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	}
 
 	// *** Start handling CNI Files
-	cni_paths, err := getContainerRuntimeCNIPaths()
+	cni_paths := getContainerRuntimeCNIPaths()
 
-	if err != nil {
-		zap.L().Error("SenseControlPlaneInfo Failed to get CNI paths", zap.Error(ErrCRNotFound))
+	if cni_paths == nil {
+		zap.L().Error("SenseControlPlaneInfo Failed to get CNI paths")
 	} else {
 
 		//Getting CNI config files
