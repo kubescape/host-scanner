@@ -27,6 +27,10 @@ var (
 
 // KubeletInfo holds information about kubelet
 type KubeletInfo struct {
+	// ServiceFile is a list of files used to configure the kubelet service.
+	// Most of the times it will be a single file, under /etc/systemd/system/kubelet.service.d.
+	ServiceFiles []FileInfo `json:"serviceFiles,omitempty"`
+
 	// Information about kubelete config file
 	ConfigFile *FileInfo `json:"configFile,omitempty"`
 
@@ -52,6 +56,28 @@ func ReadKubeletConfig(kubeletConfArgs string) ([]byte, error) {
 	return conte, err
 }
 
+func makeKubeletServiceFilesInfo(pid int) []FileInfo {
+	files, err := getKubeletServiceFiles(pid)
+	if err != nil {
+		zap.L().Warn("failed to getKubeletServiceFiles", zap.Error(err))
+		return nil
+	}
+
+	serviceFiles := []FileInfo{}
+	for _, file := range files {
+		info := makeHostFileInfoVerbose(file, false, zap.String("in", "makeProcessInfoVerbose"))
+		if info != nil {
+			serviceFiles = append(serviceFiles, *info)
+		}
+	}
+
+	if len(serviceFiles) == 0 {
+		return nil
+	}
+
+	return serviceFiles
+}
+
 // SenseKubeletInfo return varius information about the kubelet service
 func SenseKubeletInfo() (*KubeletInfo, error) {
 	ret := KubeletInfo{}
@@ -60,6 +86,9 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	if err != nil {
 		return &ret, fmt.Errorf("failed to LocateKubeletProcess: %w", err)
 	}
+
+	// Serivce files
+	ret.ServiceFiles = makeKubeletServiceFilesInfo(int(kubeletProcess.PID))
 
 	// Kubelet config
 	configPath := kubeletConfigDefaultPath

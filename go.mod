@@ -5,6 +5,8 @@ go 1.18
 require (
 	github.com/BurntSushi/toml v1.2.0
 	github.com/codegangsta/negroni v1.0.0
+	github.com/coreos/go-systemd/v22 v22.4.0
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/weaveworks/procspy v0.0.0-20150706124340-cb970aa190c3
 	go.uber.org/zap v1.19.1
 	sigs.k8s.io/yaml v1.3.0
