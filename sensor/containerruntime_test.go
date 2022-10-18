@@ -2,44 +2,42 @@ package sensor
 
 import (
 	"fmt"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_getContainerdCNIPaths(t *testing.T) {
+func Test_parseCNIPathsFromConfigContainerd(t *testing.T) {
 	uid_tests := []struct {
 		name        string
 		path        string
-		expectedRes CNIPaths
+		expectedRes string
 		wantErr     bool
 	}{
 		{
 			name:        "fileexists_paramsexist",
 			path:        "testdata/testCNI/containerd.toml",
-			expectedRes: CNIPaths{Conf_dir: "/etc/cni/net.mk", Bin_dirs: []string{"/opt/cni/bin"}},
+			expectedRes: "/etc/cni/net.mk",
 			wantErr:     false,
 		},
 		{
 			name:        "file_not_exit",
 			path:        "testdata/testCNI/bla.toml",
-			expectedRes: CNIPaths{},
+			expectedRes: "",
 			wantErr:     true,
 		},
 		{
 			name:        "fileexists_noparams",
 			path:        "testdata/testCNI/containerd_noparams.toml",
-			expectedRes: CNIPaths{},
+			expectedRes: "",
 			wantErr:     false,
 		},
 	}
 
-	crp, err := getContainerRuntimeProperties(containerdContainerRuntimeName)
-	assert.NoError(t, err)
-	cr, err := NewContainerRuntime(*crp, "")
 	for _, tt := range uid_tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cni_paths, err := cr.getCNIPathsFromConfig(tt.path)
+			CNIConfigDir, err := parseCNIConfigDirFromConfigContainerd(tt.path)
 
 			if err != nil {
 				if tt.wantErr {
@@ -50,7 +48,7 @@ func Test_getContainerdCNIPaths(t *testing.T) {
 
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, &tt.expectedRes, cni_paths)
+				assert.Equal(t, tt.expectedRes, CNIConfigDir)
 			}
 
 		})
@@ -58,40 +56,36 @@ func Test_getContainerdCNIPaths(t *testing.T) {
 
 }
 
-func Test_getCrioCNIPaths(t *testing.T) {
+func Test_parseCNIPathsFromConfigCrio(t *testing.T) {
 	uid_tests := []struct {
 		name        string
 		path        string
-		expectedRes CNIPaths
+		expectedRes string
 		wantErr     bool
 	}{
 		{
 			name:        "fileexists_paramsexist",
 			path:        "testdata/testCNI/crio.conf",
-			expectedRes: CNIPaths{Conf_dir: "/etc/cni/net.d/", Bin_dirs: []string{"/opt/cni/bin/", "/rr/ff"}},
+			expectedRes: "/etc/cni/net.d/",
 			wantErr:     false,
 		},
 		{
 			name:        "file_not_exit",
 			path:        "testdata/testCNI/bla.toml",
-			expectedRes: CNIPaths{},
+			expectedRes: "",
 			wantErr:     true,
 		},
 		{
 			name:        "fileexists_noparams",
 			path:        "testdata/testCNI/crio_noparams.conf",
-			expectedRes: CNIPaths{},
+			expectedRes: "",
 			wantErr:     false,
 		},
 	}
 
-	crp, err := getContainerRuntimeProperties(crioContainerRuntimeName)
-	assert.NoError(t, err)
-	cr, err := NewContainerRuntime(*crp, "")
-
 	for _, tt := range uid_tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cni_paths, err := cr.getCNIPathsFromConfig(tt.path)
+			CNIConfigDir, err := parseCNIConfigDirFromConfigCrio(tt.path)
 
 			if err != nil {
 				if tt.wantErr {
@@ -102,7 +96,7 @@ func Test_getCrioCNIPaths(t *testing.T) {
 
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, &tt.expectedRes, cni_paths)
+				assert.Equal(t, tt.expectedRes, CNIConfigDir)
 			}
 
 		})
@@ -110,49 +104,35 @@ func Test_getCrioCNIPaths(t *testing.T) {
 
 }
 
-func Test_getCNIPathsFromPaths_crio(t *testing.T) {
+func Test_makeSortedFilesList(t *testing.T) {
 	uid_tests := []struct {
 		name        string
 		path        string
-		expectedRes CNIPaths
+		expectedRes []string
 		wantErr     bool
 	}{
 		{
 			name:        "crio_withparams",
 			path:        "testdata/testCNI/crio.d",
-			expectedRes: CNIPaths{Conf_dir: "/etc/cni/net.d/03", Bin_dirs: []string{"/opt/cni/bin/02", "/rr/ff/02"}},
+			expectedRes: []string{"06_crio.conf", "05_crio.conf", "03_crio.conf", "01_crio.conf"},
 			wantErr:     false,
 		},
 		{
 			name:        "crio_noparams",
 			path:        "testdata/testCNI/crio.d_noparams",
-			expectedRes: CNIPaths{},
-			wantErr:     true,
+			expectedRes: []string{"06_crio.conf", "05_crio.conf"},
+			wantErr:     false,
 		},
 	}
 
 	for _, tt := range uid_tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config_paths := makeConfigFilesList(tt.path)
+			configPaths := makeSortedFilesList(tt.path, false)
+			for i, config := range tt.expectedRes {
+				tt.expectedRes[i] = path.Join(tt.path, config)
+			}
 
-			cni_paths := getCNIPathsFromConfigPaths(config_paths, parseCNIPathsFromConfig_crio)
-
-			// if cni_paths != nil {
-			// 	fmt.Printf("%+v\n", cni_paths)
-			// }
-
-			// if err != nil {
-			// 	if tt.wantErr {
-			// 		fmt.Println(err)
-			// 	} else {
-			// 		assert.NoError(t, err)
-			// 	}
-
-			// } else {
-			// 	assert.NoError(t, err)
-			// 	assert.Equal(t, &tt.expectedRes, cni_paths)
-			// }
-			assert.Equal(t, &tt.expectedRes, cni_paths)
+			assert.Equal(t, tt.expectedRes, configPaths)
 
 		})
 	}

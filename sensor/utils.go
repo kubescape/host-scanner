@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"syscall"
 
@@ -219,45 +218,45 @@ func makeHostDirFilesInfo(dir string, recursive bool, fileInfos *([]*FileInfo), 
 	return *fileInfos, err
 }
 
-func getFilesList(dir string, asc bool) ([]string, error) {
-	var filenames_ls []string
-	// dir = path.Join(root_dir, dir)
-	filepath.Walk(dir, func(dir string, info os.FileInfo, err error) error {
-
-		if err == nil {
-			if !info.IsDir() {
-				filenames_ls = append(filenames_ls, info.Name())
-			}
-		} else {
-			return err
-		}
-
-		return nil
-	})
-
-	if asc == false {
-		sort.Sort(sort.Reverse(sort.StringSlice(filenames_ls)))
-	}
-
-	return filenames_ls, nil
-}
-
-//get the full path of files within folder.
-//config params priority done by files names (i.e. 01_bla.conf has lower priority than 05_bla.conf) therefore files are sorted decending.
-func makeConfigFilesList(dir string) []string {
+// get the full path of files within folder sorted by file names.
+func makeSortedFilesList(dir string, asc bool) []string {
+	var configDirFiles []string
 	var configDirFilesFullPath []string
 
-	configDirFiles, err := getFilesList(dir, false)
+	// Open the directory.
+	outputDirRead, err := os.Open(dir)
 
 	if err != nil {
-		zap.L().Debug("makeConfigFilesList - failed to get config directory files",
+		zap.L().Error("makeSortedFilesList - Failed to Open Dir",
+			zap.String("dir", dir),
 			zap.Error(err))
-	} else {
-		for _, filename := range configDirFiles {
-			configDirFilesFullPath = append(configDirFilesFullPath, path.Join(dir, filename))
-		}
+		return configDirFiles
 	}
 
+	// Call ReadDir to get all files.
+	outputDirFiles, err := outputDirRead.ReadDir(0)
+
+	if err != nil {
+		zap.L().Error("makeSortedFilesList - Failed to Call ReadDir",
+			zap.String("dir", dir),
+			zap.Error(err))
+		return configDirFiles
+	}
+
+	for outputIndex := range outputDirFiles {
+		outputFileHere := outputDirFiles[outputIndex]
+		configDirFiles = append(configDirFiles, outputFileHere.Name())
+	}
+
+	if asc == false {
+		sort.Sort(sort.Reverse(sort.StringSlice(configDirFiles)))
+	} else {
+		sort.Sort(sort.StringSlice(configDirFiles))
+	}
+
+	for _, filename := range configDirFiles {
+		configDirFilesFullPath = append(configDirFilesFullPath, path.Join(dir, filename))
+	}
 	return configDirFilesFullPath
 
 }
