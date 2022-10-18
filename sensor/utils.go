@@ -218,7 +218,7 @@ func makeHostDirFilesInfo(dir string, recursive bool, fileInfos *([]*FileInfo), 
 	return *fileInfos, err
 }
 
-// get the full path of files within folder sorted by file names.
+// makeSortedFilesList get the full path of files within folder sorted by file names.
 func makeSortedFilesList(dir string, asc bool) []string {
 	var configDirFiles []string
 	var configDirFilesFullPath []string
