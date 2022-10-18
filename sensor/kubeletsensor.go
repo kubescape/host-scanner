@@ -40,8 +40,6 @@ type KubeletInfo struct {
 	// Information about the client ca file of kubelet (if exist)
 	ClientCAFile *FileInfo `json:"clientCAFile,omitempty"`
 
-	// CNIFiles []*FileInfo `json:"CNIFiles,omitempty"`
-
 	// Raw cmd line of kubelet process
 	CmdLine string `json:"cmdLine"`
 }
