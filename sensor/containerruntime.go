@@ -121,7 +121,7 @@ var containersRuntimeProperties = []containerRuntimeProperties{
 // 1. Find CNI config dir through kubelet flag (--container-runtime-endpoint). If not found:
 // 2. Find CNI config dir through process of supported container runtimes. If not found:
 // 3. return CNI config dir default.
-func getContainerRuntimeCNIConfigPath() string {
+func getCNIConfigPath() string {
 
 	// Attempting to find CR from kubelet.
 	CNIConfigDir := CNIConfigDirFromKubelet()
