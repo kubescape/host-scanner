@@ -1,11 +1,13 @@
 package sensor
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -139,7 +141,79 @@ func makeAPIserverEncryptionProviderConfigFile(p *ProcessDetails) *FileInfo {
 		zap.L().Warn("failed to create encryption provider config file info", zap.Error(err))
 		return nil
 	}
+
+	// remove sensetive data
+	data := map[string]interface{}{}
+	err = yaml.Unmarshal(fi.Content, &data)
+	if err != nil {
+		err = json.Unmarshal(fi.Content, &data)
+		if err != nil {
+			zap.L().Warn("failed to unmarshal encryption provider config file")
+			return nil
+		}
+	}
+
+	removeEncryptionProviderConfigSecrets(data)
+
+	// marshal back to yaml
+	fi.Content, err = yaml.Marshal(data)
+	if err != nil {
+		zap.L().Warn("failed to marshal encryption provider config file", zap.Error(err))
+		return nil
+	}
+
 	return fi
+}
+
+func removeEncryptionProviderConfigSecrets(data map[string]interface{}) {
+	resources, ok := data["resources"].([]interface{})
+	if !ok {
+		return
+	}
+
+	for i := range resources {
+		resource, ok := resources[i].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		providers, ok := resource["providers"].([]interface{})
+		if !ok {
+			continue
+		}
+
+		for j := range providers {
+			provider, ok := providers[j].(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			for key := range provider {
+				object, ok := provider[key].(map[string]interface{})
+				if !ok {
+					continue
+				}
+				keys, ok := object["keys"].([]interface{})
+				if !ok {
+					continue
+				}
+				for k := range keys {
+					key, ok := keys[k].(map[string]interface{})
+					if !ok {
+						continue
+					}
+					key["secret"] = "<REDACTED>"
+					keys[k] = key
+				}
+				object["keys"] = keys
+				provider[key] = object
+			}
+			providers[j] = provider
+		}
+		resource["providers"] = providers
+		resources[i] = resource
+	}
+	data["resources"] = resources
 }
 
 // SenseControlPlaneInfo return `ControlPlaneInfo`
