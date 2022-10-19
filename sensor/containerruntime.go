@@ -15,12 +15,13 @@ import (
 const (
 	CNIDefaultConfigDir string = "/etc/cni/"
 
+	// kubelet flags for container runtime and cni configuration dir.
 	kubeletContainerRuntime         = "--container-runtime"
 	kubeletContainerRuntimeEndPoint = "--container-runtime-endpoint"
 	kubeletCNIConfigDir             = "--cni-conf-dir"
 )
 
-// Constant values for different types of Container Runtimes
+// Types of supported container runtime processes.
 const (
 	// container runtimes names
 	containerdContainerRuntimeName = "containerd"
@@ -34,7 +35,7 @@ const (
 	cridockerdSock = "/cri-dockerd.sock"
 )
 
-// General properties for container runtimes
+// A containerRuntimeProperties holds properties of a container runtime.
 type containerRuntimeProperties struct {
 	Name string
 
@@ -44,27 +45,28 @@ type containerRuntimeProperties struct {
 	// Process flag for custom configuration directory.
 	ConfigDirArgName string
 
-	// Default config path
+	// Default config path.
 	DefaultConfigPath string
 
-	// default configuration directory
+	// default configuration directory.
 	DefaultConfigDir string
 
-	// suffix of container runtime process
+	// suffix of container runtime process.
 	ProcessSuffix string
 
-	// the socket suffix - used to identify the container runtime from kubelet
+	// the socket suffix - used to identify the container runtime from kubelet.
 	Socket string
 
-	// process pararm for CNI configuration directory
+	// process pararm for CNI configuration directory.
 	CNIConfigDirArgName string
 
 	// extract CNI info function
 	ParseCNIFromConfigFunc func(string) (string, error)
 }
 
-// Struct to hold all information of a container runtime
+// A ContainerRuntimeInfo holds a container runtime properties and process info.
 type ContainerRuntimeInfo struct {
+	// container runtime properties
 	properties *containerRuntimeProperties
 
 	// process pointer
@@ -74,10 +76,10 @@ type ContainerRuntimeInfo struct {
 	rootDir string
 }
 
-// getCNIConfigPath returns CNI config dir from a running Container Runtimes. Flow:
-// 1. Find CNI config dir through kubelet flag (--container-runtime-endpoint). If not found:
-// 2. Find CNI config dir through process of supported container runtimes. If not found:
-// 3. return CNI config dir default.
+// getCNIConfigPath returns CNI config dir from a running container runtime. Flow:
+// 	1. Find CNI config dir through kubelet flag (--container-runtime-endpoint). If not found:
+// 	2. Find CNI config dir through process of supported container runtimes. If not found:
+// 	3. return CNI config dir default that is defined in the container runtime properties.
 func getCNIConfigPath() string {
 
 	// Attempting to find CR from kubelet.
@@ -109,7 +111,7 @@ func getCNIConfigPath() string {
 
 }
 
-// getConfigDirPath - returns container runtime config directory through process flag. If not found returns default.
+// getConfigDirPath - returns container runtime config directory through process flag. If not found returns default config directory from container runtime properties.
 func (cr *ContainerRuntimeInfo) getConfigDirPath() string {
 	configDirPath, _ := cr.process.GetArg(cr.properties.ConfigDirArgName)
 
@@ -140,10 +142,9 @@ func (cr *ContainerRuntimeInfo) getConfigPath() string {
 
 // getCNIConfigDirFromConfig - returns CNI Config dir from the container runtime config file if exist.
 // flow:
-// 1. If not default config is set, return nils. else:
-// 2. Looking for config file through process cmdline, if not found:
-// 3. Use default config path.
-// 4. Extract the CNI config dir from config through a custom function of the Container Runtime. If not found, return an empty string.
+// 	1. Getting container runtime configs directory path and container runtime config path.
+// 	2. Build a decending ordered list of configs from configs directory and adding the config path as last. This is the order of precedence for configuration.
+// 	3. Get CNI config path from ordered list. If not found, return empty string.
 func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig() string {
 
 	var configDirFilesFullPath []string
@@ -171,7 +172,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig() string {
 
 	configPath := cr.getConfigPath()
 
-	//appding config file to the end of the list as it always has the lowest priority.
+	//appending config file to the end of the list as it always has the lowest priority.
 	if configPath != "" {
 		configDirFilesFullPath = append(configDirFilesFullPath, configPath)
 	}
@@ -186,7 +187,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig() string {
 
 }
 
-// getCNIConfigDirFromConfigPaths - Get a list of configpaths and a parsing function and returns CNI config dir.
+// getCNIConfigDirFromConfigPaths - Get a list of configpaths, run through the paths by order, parse the CNI config dir and return once found. If not found, return empty string.
 func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfigPaths(configPaths []string) string {
 
 	for _, configPath := range configPaths {
@@ -207,7 +208,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfigPaths(configPaths []str
 
 }
 
-// getCNIConfigDirFromProcess - returns CNI config dir from process cmdline flags if defined.
+// getCNIConfigDirFromProcess - returns CNI config dir from process cmdline flags if defined, otherwise returns empty string.
 func (cr *ContainerRuntimeInfo) getCNIConfigDirFromProcess() string {
 
 	if cr.properties.CNIConfigDirArgName != "" {
@@ -223,10 +224,10 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromProcess() string {
 
 }
 
-// getCNIConfigDir - returns CNI config dir of the container runtime
-// 1. Try to get paths from process flags. If not found:
-// 2. Try to get paths from config file. If not found:
-// 3. return default
+// getCNIConfigDir - returns CNI config dir of the container runtime.
+// 	1. Get dir from container runtime process flags. If not found:
+// 	2. Get dir from container runtime config file(s). If not found:
+// 	3. return default CNI config dir
 func (cr *ContainerRuntimeInfo) getCNIConfigDir() string {
 
 	CNIConfigDir := cr.getCNIConfigDirFromProcess()
@@ -240,7 +241,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDir() string {
 	return CNIConfigDir
 }
 
-// containerdProps - returns container runtime "containerd" properties
+// containerdProps - returns container runtime "containerd" properties.
 func containerdProps() *containerRuntimeProperties {
 	return &containerRuntimeProperties{Name: containerdContainerRuntimeName,
 		DefaultConfigPath:      "/etc/containerd/config.toml",
@@ -254,7 +255,7 @@ func containerdProps() *containerRuntimeProperties {
 
 }
 
-// crioProps - returns container runtime "cri-o" properties
+// crioProps - returns container runtime "cri-o" properties.
 func crioProps() *containerRuntimeProperties {
 	return &containerRuntimeProperties{Name: crioContainerRuntimeName,
 		DefaultConfigPath:      "/etc/crio/crio.conf",
@@ -268,7 +269,8 @@ func crioProps() *containerRuntimeProperties {
 
 }
 
-// Constructor for ContainerRuntime object. Constructor will fail if process wasn't found for container runtime.
+// newContainerRuntime is a constructor for ContainerRuntime object. Constructor will fail if process wasn't found for container runtime.
+// Constructor accept CRIKind as parameter which can be either a container runtime name or container runtime process suffix.
 func newContainerRuntime(CRIKind string) (*ContainerRuntimeInfo, error) {
 
 	cr := &ContainerRuntimeInfo{}
@@ -292,7 +294,6 @@ func newContainerRuntime(CRIKind string) (*ContainerRuntimeInfo, error) {
 
 	cr.process = p
 	cr.rootDir = hostFileSystemDefaultLocation
-	// cr.updateCNIConfigDir()
 
 	return cr, nil
 
@@ -315,7 +316,7 @@ func getContainerRuntimeFromProcess() (*ContainerRuntimeInfo, error) {
 
 }
 
-// parseCNIConfigDirFromConfigContainerd - returns cni config dir from a containerd config structure. If not found returns empty string.
+// parseCNIConfigDirFromConfigContainerd - parses and returns cni config dir from a containerd config structure. If not found returns empty string.
 func parseCNIConfigDirFromConfigContainerd(configPath string) (string, error) {
 
 	cniConfig := struct {
@@ -335,7 +336,7 @@ func parseCNIConfigDirFromConfigContainerd(configPath string) (string, error) {
 	return cniConfig.Plugings[containerdConfigSection].CNI.CNIConfigDir, nil
 }
 
-// parseCNIConfigDirFromConfigCrio - returns cni config dir from a cri-o config structure. If not found returns empty string.
+// parseCNIConfigDirFromConfigCrio - parses and returns cni config dir from a cri-o config structure. If not found returns empty string.
 func parseCNIConfigDirFromConfigCrio(configPath string) (string, error) {
 
 	cniConfig := struct {
@@ -353,12 +354,8 @@ func parseCNIConfigDirFromConfigCrio(configPath string) (string, error) {
 	return cniConfig.Crio["network"].CNIConfigDir, nil
 }
 
-// parseCNIConfigDirFromConfigCridockerd - Not implemented.
-func parseCNIConfigDirFromConfigCridockerd(configPath string) (string, error) {
-	return "", fmt.Errorf("parseCNIConfigDirFromConfigCridockerd not implemented")
-}
-
-// CNIConfigDirFromKubelet - returns cni config dir by kubelet --container-runtime-endpoint flag.
+// CNIConfigDirFromKubelet - returns cni config dir by kubelet --container-runtime-endpoint flag. Returns empty string if not found.
+// A specific case is cri-dockerd.sock process which it's container runtime is determined by kubernetes docs.
 func CNIConfigDirFromKubelet() string {
 
 	var containerProcessSock string
