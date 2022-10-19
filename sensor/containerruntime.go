@@ -255,7 +255,7 @@ func newContainerdProps() *containerRuntimeProperties {
 }
 
 // crioProps - returns container runtime "cri-o" properties
-func crioProps() *containerRuntimeProperties {
+func newCrioProps() *containerRuntimeProperties {
 	return &containerRuntimeProperties{Name: crioContainerRuntimeName,
 		DefaultConfigPath:      "/etc/crio/crio.conf",
 		ProcessSuffix:          "/crio",
