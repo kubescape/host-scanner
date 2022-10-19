@@ -362,7 +362,7 @@ func parseCNIConfigDirFromConfigCridockerd(configPath string) (string, error) {
 func CNIConfigDirFromKubelet() string {
 
 	var containerProcessSock string
-	proc, err := LocateProcessByExecSuffix(kubeletProcessSuffix)
+	proc, err := LocateKubeletProcess()
 	if err != nil {
 		zap.L().Debug("CNIConfigDirFromKubelet - failed to locate kube-proxy process")
 		return ""
