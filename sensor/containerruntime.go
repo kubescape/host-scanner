@@ -241,7 +241,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDir() string {
 }
 
 // containerdProps - returns container runtime "containerd" properties
-func newContainerdProps() *containerRuntimeProperties {
+func containerdProps() *containerRuntimeProperties {
 	return &containerRuntimeProperties{Name: containerdContainerRuntimeName,
 		DefaultConfigPath:      "/etc/containerd/config.toml",
 		ProcessSuffix:          "/containerd",
@@ -255,7 +255,7 @@ func newContainerdProps() *containerRuntimeProperties {
 }
 
 // crioProps - returns container runtime "cri-o" properties
-func newCrioProps() *containerRuntimeProperties {
+func crioProps() *containerRuntimeProperties {
 	return &containerRuntimeProperties{Name: crioContainerRuntimeName,
 		DefaultConfigPath:      "/etc/crio/crio.conf",
 		ProcessSuffix:          "/crio",
