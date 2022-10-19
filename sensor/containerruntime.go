@@ -241,7 +241,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDir() string {
 }
 
 // containerdProps - returns container runtime "containerd" properties
-func containerdProps() *containerRuntimeProperties {
+func newContainerdProps() *containerRuntimeProperties {
 	return &containerRuntimeProperties{Name: containerdContainerRuntimeName,
 		DefaultConfigPath:      "/etc/containerd/config.toml",
 		ProcessSuffix:          "/containerd",
