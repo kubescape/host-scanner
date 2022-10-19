@@ -14,6 +14,10 @@ import (
 // CNI default constants
 const (
 	CNIDefaultConfigDir string = "/etc/cni/"
+
+	kubeletContainerRuntime         = "--container-runtime"
+	kubeletContainerRuntimeEndPoint = "--container-runtime-endpoint"
+	kubeletCNIConfigDir             = "--cni-conf-dir"
 )
 
 // Constant values for different types of Container Runtimes

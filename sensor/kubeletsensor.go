@@ -8,13 +8,10 @@ import (
 )
 
 const (
-	procDirName                     = "/proc"
-	kubeletProcessSuffix            = "/kubelet"
-	kubeletConfigArgName            = "--config"
-	kubeletClientCAArgName          = "--client-ca-file"
-	kubeletContainerRuntime         = "--container-runtime"
-	kubeletContainerRuntimeEndPoint = "--container-runtime-endpoint"
-	kubeletCNIConfigDir             = "--cni-conf-dir"
+	procDirName            = "/proc"
+	kubeletProcessSuffix   = "/kubelet"
+	kubeletConfigArgName   = "--config"
+	kubeletClientCAArgName = "--client-ca-file"
 
 	// Default paths
 	kubeletConfigDefaultPath     = "/var/lib/kubelet/config.yaml"
