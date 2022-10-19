@@ -74,7 +74,7 @@ type ContainerRuntimeInfo struct {
 	rootDir string
 }
 
-// getContainerRuntimeCNIConfigPath returns CNI config dir from a running Container Runtimes. Flow:
+// getCNIConfigPath returns CNI config dir from a running Container Runtimes. Flow:
 // 1. Find CNI config dir through kubelet flag (--container-runtime-endpoint). If not found:
 // 2. Find CNI config dir through process of supported container runtimes. If not found:
 // 3. return CNI config dir default.
