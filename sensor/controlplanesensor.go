@@ -45,6 +45,7 @@ type ControlPlaneInfo struct {
 	AdminConfigFile       *FileInfo       `json:"adminConfigFile,omitempty"`
 	PKIDIr                *FileInfo       `json:"PKIDir,omitempty"`
 	PKIFiles              []*FileInfo     `json:"PKIFiles,omitempty"`
+	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles"`
 }
 
 // K8sProcessInfo holds information about a k8s process
@@ -281,6 +282,15 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		)
 	}
 
+	// make cni config files
+	CNIConfigInfo, err := makeCNIConfigFilesInfo()
+
+	if err != nil {
+		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
+	} else {
+		ret.CNIConfigFiles = CNIConfigInfo
+	}
+
 	// If wasn't able to find any data - this is not a control plane
 	if ret.APIServerInfo.K8sProcessInfo == nil &&
 		ret.ControllerManagerInfo == nil &&
@@ -298,4 +308,28 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	}
 
 	return &ret, nil
+}
+
+// makeCNIConfigFilesInfo - returns a list of FileInfos of cni config files.
+func makeCNIConfigFilesInfo() ([]*FileInfo, error) {
+	// *** Start handling CNI Files
+	CNIConfigDir := getCNIConfigPath()
+
+	if CNIConfigDir == "" {
+		return nil, fmt.Errorf("no CNI Config dir found in getCNIConfigPath")
+	}
+
+	//Getting CNI config files
+	CNIConfigInfo, err := makeHostDirFilesInfo(CNIConfigDir, true, nil, 0)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to makeHostDirFilesInfo for CNIConfigDir %s: %w", CNIConfigDir, err)
+	}
+
+	if len(CNIConfigInfo) == 0 {
+		zap.L().Debug("SenseControlPlaneInfo - no cni config files were found.",
+			zap.String("path", CNIConfigDir))
+	}
+
+	return CNIConfigInfo, nil
 }
