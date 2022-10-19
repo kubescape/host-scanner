@@ -282,31 +282,13 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		)
 	}
 
-	// *** Start handling CNI Files
-	CNIConfigDir := getContainerRuntimeCNIConfigPath()
+	// make cni config files
+	CNIConfigInfo, err := makeCNIConfigFilesInfo()
 
-	if CNIConfigDir == "" {
-		zap.L().Error("SenseControlPlaneInfo Failed to get CNI paths")
+	if err != nil {
+		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
 	} else {
-
-		//Getting CNI config files
-		CNIConfigInfo, err := makeHostDirFilesInfo(CNIConfigDir, true, nil, 0)
 		ret.CNIConfigFiles = CNIConfigInfo
-
-		if err != nil {
-			zap.L().Debug("SenseControlPlaneInfo failed to  makeHostDirFilesInfo for CNI Config files",
-				zap.String("path", CNIConfigDir),
-				zap.Error(err),
-			)
-		} else {
-			if len(CNIConfigInfo) == 0 {
-				zap.L().Debug("SenseControlPlaneInfo - no cni config files were found.",
-					zap.String("path", CNIConfigDir),
-					zap.Error(err),
-				)
-			}
-		}
-
 	}
 
 	// If wasn't able to find any data - this is not a control plane
@@ -326,4 +308,28 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	}
 
 	return &ret, nil
+}
+
+// makeCNIConfigFilesInfo - returns a list of FileInfos of cni config files.
+func makeCNIConfigFilesInfo() ([]*FileInfo, error) {
+	// *** Start handling CNI Files
+	CNIConfigDir := getCNIConfigPath()
+
+	if CNIConfigDir == "" {
+		return nil, fmt.Errorf("no CNI Config dir found in getCNIConfigPath")
+	}
+
+	//Getting CNI config files
+	CNIConfigInfo, err := makeHostDirFilesInfo(CNIConfigDir, true, nil, 0)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to makeHostDirFilesInfo for CNIConfigDir %s: %w", CNIConfigDir, err)
+	}
+
+	if len(CNIConfigInfo) == 0 {
+		zap.L().Debug("SenseControlPlaneInfo - no cni config files were found.",
+			zap.String("path", CNIConfigDir))
+	}
+
+	return CNIConfigInfo, nil
 }

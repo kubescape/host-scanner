@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"sort"
 	"syscall"
 
 	"go.uber.org/zap"
@@ -216,47 +215,4 @@ func makeHostDirFilesInfo(dir string, recursive bool, fileInfos *([]*FileInfo), 
 	}
 
 	return *fileInfos, err
-}
-
-// makeSortedFilesList get the full path of files within folder sorted by file names.
-func makeSortedFilesList(dir string, asc bool) []string {
-	var configDirFiles []string
-	var configDirFilesFullPath []string
-
-	// Open the directory.
-	outputDirRead, err := os.Open(dir)
-
-	if err != nil {
-		zap.L().Error("makeSortedFilesList - Failed to Open Dir",
-			zap.String("dir", dir),
-			zap.Error(err))
-		return configDirFiles
-	}
-
-	// Call ReadDir to get all files.
-	outputDirFiles, err := outputDirRead.ReadDir(0)
-
-	if err != nil {
-		zap.L().Error("makeSortedFilesList - Failed to Call ReadDir",
-			zap.String("dir", dir),
-			zap.Error(err))
-		return configDirFiles
-	}
-
-	for outputIndex := range outputDirFiles {
-		outputFileHere := outputDirFiles[outputIndex]
-		configDirFiles = append(configDirFiles, outputFileHere.Name())
-	}
-
-	if asc == false {
-		sort.Sort(sort.Reverse(sort.StringSlice(configDirFiles)))
-	} else {
-		sort.Sort(sort.StringSlice(configDirFiles))
-	}
-
-	for _, filename := range configDirFiles {
-		configDirFilesFullPath = append(configDirFilesFullPath, path.Join(dir, filename))
-	}
-	return configDirFilesFullPath
-
 }

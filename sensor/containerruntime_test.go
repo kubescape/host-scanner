@@ -2,7 +2,6 @@ package sensor
 
 import (
 	"fmt"
-	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -104,37 +103,37 @@ func Test_parseCNIPathsFromConfigCrio(t *testing.T) {
 
 }
 
-func Test_makeSortedFilesList(t *testing.T) {
-	uid_tests := []struct {
-		name        string
-		path        string
-		expectedRes []string
-		wantErr     bool
-	}{
-		{
-			name:        "crio_withparams",
-			path:        "testdata/testCNI/crio.d",
-			expectedRes: []string{"06_crio.conf", "05_crio.conf", "03_crio.conf", "01_crio.conf"},
-			wantErr:     false,
-		},
-		{
-			name:        "crio_noparams",
-			path:        "testdata/testCNI/crio.d_noparams",
-			expectedRes: []string{"06_crio.conf", "05_crio.conf"},
-			wantErr:     false,
-		},
-	}
+// func Test_makeSortedFilesList(t *testing.T) {
+// 	uid_tests := []struct {
+// 		name        string
+// 		path        string
+// 		expectedRes []string
+// 		wantErr     bool
+// 	}{
+// 		{
+// 			name:        "crio_withparams",
+// 			path:        "testdata/testCNI/crio.d",
+// 			expectedRes: []string{"06_crio.conf", "05_crio.conf", "03_crio.conf", "01_crio.conf"},
+// 			wantErr:     false,
+// 		},
+// 		{
+// 			name:        "crio_noparams",
+// 			path:        "testdata/testCNI/crio.d_noparams",
+// 			expectedRes: []string{"06_crio.conf", "05_crio.conf"},
+// 			wantErr:     false,
+// 		},
+// 	}
 
-	for _, tt := range uid_tests {
-		t.Run(tt.name, func(t *testing.T) {
-			configPaths := makeSortedFilesList(tt.path, false)
-			for i, config := range tt.expectedRes {
-				tt.expectedRes[i] = path.Join(tt.path, config)
-			}
+// 	for _, tt := range uid_tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			configPaths := makeSortedFilesList(tt.path, false)
+// 			for i, config := range tt.expectedRes {
+// 				tt.expectedRes[i] = path.Join(tt.path, config)
+// 			}
 
-			assert.Equal(t, tt.expectedRes, configPaths)
+// 			assert.Equal(t, tt.expectedRes, configPaths)
 
-		})
-	}
+// 		})
+// 	}
 
-}
+// }

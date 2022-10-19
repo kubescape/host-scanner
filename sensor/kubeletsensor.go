@@ -1,7 +1,6 @@
 package sensor
 
 import (
-	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -15,14 +14,11 @@ const (
 	kubeletClientCAArgName          = "--client-ca-file"
 	kubeletContainerRuntime         = "--container-runtime"
 	kubeletContainerRuntimeEndPoint = "--container-runtime-endpoint"
+	kubeletCNIConfigDir             = "--cni-conf-dir"
 
 	// Default paths
 	kubeletConfigDefaultPath     = "/var/lib/kubelet/config.yaml"
 	kubeletKubeConfigDefaultPath = "/etc/kubernetes/kubelet.conf"
-)
-
-var (
-	ErrCRNotFound = errors.New("failed to find Container Runtime EndPoint")
 )
 
 // KubeletInfo holds information about kubelet
