@@ -223,25 +223,27 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	debugInfo := zap.String("in", "SenseControlPlaneInfo")
 
 	apiProc, err := LocateProcessByExecSuffix(apiServerExe)
-	if err != nil {
+	if err == nil {
+		ret.APIServerInfo = &ApiServerInfo{}
+		ret.APIServerInfo.K8sProcessInfo = makeProcessInfoVerbose(apiProc, apiServerSpecsPath, "", "", "")
+		ret.APIServerInfo.EncryptionProviderConfigFile = makeAPIserverEncryptionProviderConfigFile(apiProc)
+	} else {
 		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
 	}
 
 	controllerMangerProc, err := LocateProcessByExecSuffix(controllerManagerExe)
-	if err != nil {
+	if err == nil {
+		ret.ControllerManagerInfo = makeProcessInfoVerbose(controllerMangerProc, controllerManagerSpecsPath, controllerManagerConfigPath, "", "")
+	} else {
 		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
 	}
 
 	SchedulerProc, err := LocateProcessByExecSuffix(schedulerExe)
-	if err != nil {
+	if err == nil {
+		ret.SchedulerInfo = makeProcessInfoVerbose(SchedulerProc, schedulerSpecsPath, schedulerConfigPath, "", "")
+	} else {
 		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
 	}
-
-	ret.APIServerInfo = &ApiServerInfo{}
-	ret.APIServerInfo.K8sProcessInfo = makeProcessInfoVerbose(apiProc, apiServerSpecsPath, "", "", "")
-	ret.APIServerInfo.EncryptionProviderConfigFile = makeAPIserverEncryptionProviderConfigFile(apiProc)
-	ret.ControllerManagerInfo = makeProcessInfoVerbose(controllerMangerProc, controllerManagerSpecsPath, controllerManagerConfigPath, "", "")
-	ret.SchedulerInfo = makeProcessInfoVerbose(SchedulerProc, schedulerSpecsPath, schedulerConfigPath, "", "")
 
 	// EtcdConfigFile
 	ret.EtcdConfigFile = makeHostFileInfoVerbose(etcdConfigPath,
@@ -292,14 +294,12 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	}
 
 	// If wasn't able to find any data - this is not a control plane
-	if ret.APIServerInfo.K8sProcessInfo == nil &&
+	if ret.APIServerInfo == nil &&
 		ret.ControllerManagerInfo == nil &&
 		ret.SchedulerInfo == nil &&
 		ret.EtcdConfigFile == nil &&
 		ret.EtcdDataDir == nil &&
-		ret.AdminConfigFile == nil &&
-		ret.PKIDIr == nil &&
-		ret.PKIFiles == nil {
+		ret.AdminConfigFile == nil {
 		return nil, &SenseError{
 			Massage:  "not a control plane node",
 			Function: "SenseControlPlaneInfo",
