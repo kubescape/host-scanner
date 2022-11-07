@@ -17,6 +17,7 @@ const (
 	etcdExe                        = "/etcd"
 	etcdDataDirArg                 = "--data-dir"
 	apiEncryptionProviderConfigArg = "--encryption-provider-config"
+	auditPolicyFileArg             = "--audit-policy-file"
 
 	// Default files paths according to https://workbench.cisecurity.org/benchmarks/8973/sections/1126652
 	apiServerSpecsPath          = "/etc/kubernetes/manifests/kube-apiserver.yaml"
@@ -68,6 +69,7 @@ type K8sProcessInfo struct {
 
 type ApiServerInfo struct {
 	EncryptionProviderConfigFile *FileInfo `json:"encryptionProviderConfigFile,omitempty"`
+	AuditPolicyFile              *FileInfo `json:"auditPolicyFile,omitempty"`
 	*K8sProcessInfo              `json:",inline"`
 }
 
@@ -215,6 +217,22 @@ func removeEncryptionProviderConfigSecrets(data map[string]interface{}) {
 	data["resources"] = resources
 }
 
+// makeAPIserverAuditPolicyFile returns a FileInfo object for an audit policy file of the API server. Required for https://workbench.cisecurity.org/sections/1126663/recommendations/1838675
+func makeAPIserverAuditPolicyFile(p *ProcessDetails) *FileInfo {
+	auditPolicyFilePath, ok := p.GetArg(auditPolicyFileArg)
+	if !ok {
+		zap.L().Info("audit-policy-file argument was not set ", zap.String("in", "makeAPIserverAuditPolicyFile"))
+		return nil
+	}
+
+	fi, err := makeContaineredFileInfo(auditPolicyFilePath, true, p)
+	if err != nil {
+		zap.L().Warn("failed to audit policy file info", zap.Error(err))
+		return nil
+	}
+	return fi
+}
+
 // SenseControlPlaneInfo return `ControlPlaneInfo`
 func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	var err error
@@ -227,6 +245,7 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		ret.APIServerInfo = &ApiServerInfo{}
 		ret.APIServerInfo.K8sProcessInfo = makeProcessInfoVerbose(apiProc, apiServerSpecsPath, "", "", "")
 		ret.APIServerInfo.EncryptionProviderConfigFile = makeAPIserverEncryptionProviderConfigFile(apiProc)
+		ret.APIServerInfo.AuditPolicyFile = makeAPIserverAuditPolicyFile(apiProc)
 	} else {
 		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
 	}
