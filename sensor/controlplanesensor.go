@@ -46,6 +46,12 @@ type ControlPlaneInfo struct {
 	PKIDIr                *FileInfo       `json:"PKIDir,omitempty"`
 	PKIFiles              []*FileInfo     `json:"PKIFiles,omitempty"`
 	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles"`
+
+	//Whether CNI supports Network Policies or not.
+	CNISupportNetworkPolicies *bool `json:"CNISupportNetworkPolicies,omitempty"`
+
+	//The name of running CNI
+	CNIName string `json:"CNIName,omitempty"`
 }
 
 // K8sProcessInfo holds information about a k8s process
@@ -293,6 +299,14 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		ret.CNIConfigFiles = CNIConfigInfo
 	}
 
+	// check if CNI supports Network Policies
+	supportNetworkPolicies, cniName := isCNISupportsNetworkPolicies()
+
+	if cniName != "" && supportNetworkPolicies != nil {
+		ret.CNISupportNetworkPolicies = supportNetworkPolicies
+		ret.CNIName = cniName
+	}
+
 	// If wasn't able to find any data - this is not a control plane
 	if ret.APIServerInfo == nil &&
 		ret.ControllerManagerInfo == nil &&
@@ -332,4 +346,39 @@ func makeCNIConfigFilesInfo() ([]*FileInfo, error) {
 	}
 
 	return CNIConfigInfo, nil
+}
+
+// CNIConfigDirFromKubelet - looking for CNI process and return CNI name and if CNI supports Network Policies.
+// If no CNI process found, return 'nil' with empty string as the CNI name.
+func isCNISupportsNetworkPolicies() (*bool, string) {
+	supportedCNIs := []struct {
+		name                   string
+		processSuffix          string
+		supportNetworkPolicies bool
+	}{
+		{"Flannel", "flanneld", false},
+		{"Calico", "calico-node", true},
+		{"Cilium", "cilium-agent", true},
+		{"WeaveNet", "weave-net", true},
+	}
+
+	for _, cni := range supportedCNIs {
+		p, err := LocateProcessByExecSuffix(cni.processSuffix)
+
+		if p != nil {
+			zap.L().Debug("CNI process found", zap.String("name", cni.name))
+			return &cni.supportNetworkPolicies, cni.name
+		}
+
+		if err != nil {
+			zap.L().Error("isCNISupportsNetworkPolicies- Failed to locate process for cni",
+				zap.String("cni name", cni.name),
+				zap.Error(err))
+		}
+
+	}
+
+	zap.L().Debug("No supported CNI process was found")
+
+	return nil, ""
 }
