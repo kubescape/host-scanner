@@ -45,12 +45,9 @@ type ControlPlaneInfo struct {
 	AdminConfigFile       *FileInfo       `json:"adminConfigFile,omitempty"`
 	PKIDIr                *FileInfo       `json:"PKIDir,omitempty"`
 	PKIFiles              []*FileInfo     `json:"PKIFiles,omitempty"`
-	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles"`
+	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles,omitempty"`
 
-	//Whether CNI supports Network Policies or not.
-	CNISupportNetworkPolicies *bool `json:"CNISupportNetworkPolicies,omitempty"`
-
-	//The name of running CNI
+	// The name of the running CNI
 	CNIName string `json:"CNIName,omitempty"`
 }
 
@@ -300,12 +297,7 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	}
 
 	// check if CNI supports Network Policies
-	supportNetworkPolicies, cniName := isCNISupportsNetworkPolicies()
-
-	if cniName != "" && supportNetworkPolicies != nil {
-		ret.CNISupportNetworkPolicies = supportNetworkPolicies
-		ret.CNIName = cniName
-	}
+	ret.CNIName = getCNIName()
 
 	// If wasn't able to find any data - this is not a control plane
 	if ret.APIServerInfo == nil &&
@@ -348,18 +340,18 @@ func makeCNIConfigFilesInfo() ([]*FileInfo, error) {
 	return CNIConfigInfo, nil
 }
 
-// CNIConfigDirFromKubelet - looking for CNI process and return CNI name and if CNI supports Network Policies.
-// If no CNI process found, return 'nil' with empty string as the CNI name.
-func isCNISupportsNetworkPolicies() (*bool, string) {
+// getCNIName - looking for CNI process and return CNI name, or empty if not found.
+func getCNIName() string {
 	supportedCNIs := []struct {
-		name                   string
-		processSuffix          string
-		supportNetworkPolicies bool
+		name          string
+		processSuffix string
 	}{
-		{"Flannel", "flanneld", false},
-		{"Calico", "calico-node", true},
-		{"Cilium", "cilium-agent", true},
-		{"WeaveNet", "weave-net", true},
+		// 'canal' CNI "sets up Calico to handle policy management and Flannel to manage the network itself". Therefore we will first
+		// check "calico" (which supports network policies and indicates for either 'canal' or 'calico') and then flannel.
+		{"Calico", "calico-node"},
+		{"Flannel", "flanneld"},
+		{"Cilium", "cilium-agent"},
+		{"WeaveNet", "weave-net"},
 	}
 
 	for _, cni := range supportedCNIs {
@@ -367,7 +359,7 @@ func isCNISupportsNetworkPolicies() (*bool, string) {
 
 		if p != nil {
 			zap.L().Debug("CNI process found", zap.String("name", cni.name))
-			return &cni.supportNetworkPolicies, cni.name
+			return cni.name
 		}
 
 		if err != nil {
@@ -380,5 +372,5 @@ func isCNISupportsNetworkPolicies() (*bool, string) {
 
 	zap.L().Debug("No supported CNI process was found")
 
-	return nil, ""
+	return ""
 }
