@@ -46,7 +46,10 @@ type ControlPlaneInfo struct {
 	AdminConfigFile       *FileInfo       `json:"adminConfigFile,omitempty"`
 	PKIDIr                *FileInfo       `json:"PKIDir,omitempty"`
 	PKIFiles              []*FileInfo     `json:"PKIFiles,omitempty"`
-	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles"`
+	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles,omitempty"`
+
+	// The name of the running CNI
+	CNIName string `json:"CNIName,omitempty"`
 }
 
 // K8sProcessInfo holds information about a k8s process
@@ -312,6 +315,9 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		ret.CNIConfigFiles = CNIConfigInfo
 	}
 
+	// get CNI name
+	ret.CNIName = getCNIName()
+
 	// If wasn't able to find any data - this is not a control plane
 	if ret.APIServerInfo == nil &&
 		ret.ControllerManagerInfo == nil &&
@@ -351,4 +357,39 @@ func makeCNIConfigFilesInfo() ([]*FileInfo, error) {
 	}
 
 	return CNIConfigInfo, nil
+}
+
+// getCNIName - looking for CNI process and return CNI name, or empty if not found.
+func getCNIName() string {
+	supportedCNIs := []struct {
+		name          string
+		processSuffix string
+	}{
+		// 'canal' CNI "sets up Calico to handle policy management and Flannel to manage the network itself". Therefore we will first
+		// check "calico" (which supports network policies and indicates for either 'canal' or 'calico') and then flannel.
+		{"Calico", "calico-node"},
+		{"Flannel", "flanneld"},
+		{"Cilium", "cilium-agent"},
+		{"WeaveNet", "weave-net"},
+	}
+
+	for _, cni := range supportedCNIs {
+		p, err := LocateProcessByExecSuffix(cni.processSuffix)
+
+		if p != nil {
+			zap.L().Debug("CNI process found", zap.String("name", cni.name))
+			return cni.name
+		}
+
+		if err != nil {
+			zap.L().Error("getCNIName- Failed to locate process for cni",
+				zap.String("cni name", cni.name),
+				zap.Error(err))
+		}
+
+	}
+
+	zap.L().Debug("No supported CNI process was found")
+
+	return ""
 }
