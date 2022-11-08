@@ -363,7 +363,7 @@ func getCNIName() string {
 		}
 
 		if err != nil {
-			zap.L().Error("isCNISupportsNetworkPolicies- Failed to locate process for cni",
+			zap.L().Error("getCNIName- Failed to locate process for cni",
 				zap.String("cni name", cni.name),
 				zap.Error(err))
 		}
