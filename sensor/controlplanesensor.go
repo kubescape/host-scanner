@@ -296,7 +296,7 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		ret.CNIConfigFiles = CNIConfigInfo
 	}
 
-	// check if CNI supports Network Policies
+	// get CNI name
 	ret.CNIName = getCNIName()
 
 	// If wasn't able to find any data - this is not a control plane
