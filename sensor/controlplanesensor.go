@@ -230,7 +230,7 @@ func makeAPIserverAuditPolicyFile(p *ProcessDetails) *FileInfo {
 
 	fi, err := makeContaineredFileInfo(auditPolicyFilePath, true, p)
 	if err != nil {
-		zap.L().Warn("failed to audit policy file info", zap.Error(err))
+		zap.L().Warn("failed to generate audit policy file info", zap.Error(err))
 		return nil
 	}
 	return fi
