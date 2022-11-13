@@ -140,7 +140,7 @@ func makeAPIserverEncryptionProviderConfigFile(p *ProcessDetails) *FileInfo {
 		return nil
 	}
 
-	fi, err := makeContaineredFileInfo(encryptionProviderConfigPath, true, p)
+	fi, err := makeContaineredFileInfo(p, encryptionProviderConfigPath, true)
 	if err != nil {
 		zap.L().Warn("failed to create encryption provider config file info", zap.Error(err))
 		return nil
@@ -228,12 +228,9 @@ func makeAPIserverAuditPolicyFile(p *ProcessDetails) *FileInfo {
 		return nil
 	}
 
-	fi, err := makeContaineredFileInfo(auditPolicyFilePath, true, p)
-	if err != nil {
-		zap.L().Warn("failed to generate audit policy file info", zap.Error(err))
-		return nil
-	}
-	return fi
+	return makeContaineredFileInfoVerbose(p, auditPolicyFilePath, true,
+		zap.String("in", "makeAPIserverAuditPolicyFile"),
+	)
 }
 
 // SenseControlPlaneInfo return `ControlPlaneInfo`
