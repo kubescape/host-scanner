@@ -27,15 +27,17 @@ func initHTTPHandlers() {
 	http.HandleFunc("/kubeletCommandLine", func(rw http.ResponseWriter, r *http.Request) {
 		proc, err := sensor.LocateKubeletProcess()
 
-		cmdLine := strings.Join(proc.CmdLine, " ")
 		if err != nil {
 			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
-		} else {
-			rw.WriteHeader(http.StatusOK)
-			if _, err := rw.Write([]byte(cmdLine)); err != nil {
-				zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
-			}
+			return
 		}
+
+		cmdLine := strings.Join(proc.CmdLine, " ")
+		rw.WriteHeader(http.StatusOK)
+		if _, err := rw.Write([]byte(cmdLine)); err != nil {
+			zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
+		}
+
 	})
 	http.HandleFunc("/osRelease", osReleaseHandler)
 	http.HandleFunc("/kernelVersion", kernelVersionHandler)

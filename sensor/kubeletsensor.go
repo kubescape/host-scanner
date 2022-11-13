@@ -87,15 +87,9 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	if ok {
 		configPath = p
 	}
-	configInfo, err := makeHostFileInfo(configPath, true)
-	if err == nil {
-		ret.ConfigFile = configInfo
-	} else {
-		zap.L().Debug("SenseKubeletInfo failed to MakeHostFileInfo for kubelet config",
-			zap.String("path", configPath),
-			zap.Error(err),
-		)
-	}
+	ret.ConfigFile = makeContaineredFileInfoVerbose(kubeletProcess, configPath, true,
+		zap.String("in", "SenseKubeletInfo"),
+	)
 
 	// Kubelet kubeconfig
 	kubeConfigPath := kubeletConfigDefaultPath
@@ -103,35 +97,23 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	if ok {
 		kubeConfigPath = p
 	}
-	kubeConfigInfo, err := makeHostFileInfo(kubeConfigPath, false)
-	if err == nil {
-		ret.KubeConfigFile = kubeConfigInfo
-	} else {
-		zap.L().Debug("SenseKubeletInfo failed to MakeHostFileInfo for kubelet kubeconfig",
-			zap.String("path", kubeConfigPath),
-			zap.Error(err),
-		)
-	}
+	ret.KubeConfigFile = makeContaineredFileInfoVerbose(kubeletProcess, kubeConfigPath, false,
+		zap.String("in", "SenseKubeletInfo"),
+	)
 
 	// Kubelet client ca certificate
 	caFilePath, ok := kubeletProcess.GetArg(kubeletClientCAArgName)
-	if !ok && configInfo != nil && configInfo.Content != nil {
-		zap.L().Error("extracting kubelet client ca certificate from config")
-		extracted, err := kubeletExtractCAFileFromConf(configInfo.Content)
+	if !ok && ret.ConfigFile != nil && ret.ConfigFile.Content != nil {
+		zap.L().Debug("extracting kubelet client ca certificate from config")
+		extracted, err := kubeletExtractCAFileFromConf(ret.ConfigFile.Content)
 		if err == nil {
 			caFilePath = extracted
 		}
 	}
 	if caFilePath != "" {
-		caInfo, err := makeHostFileInfo(caFilePath, false)
-		if err == nil {
-			ret.ClientCAFile = caInfo
-		} else {
-			zap.L().Debug("SenseKubeletInfo failed to MakeHostFileInfo for client ca file",
-				zap.String("path", caFilePath),
-				zap.Error(err),
-			)
-		}
+		ret.ClientCAFile = makeContaineredFileInfoVerbose(kubeletProcess, caFilePath, false,
+			zap.String("in", "SenseKubeletInfo"),
+		)
 	}
 
 	// Cmd line
@@ -142,29 +124,20 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 
 // kubeletExtractCAFileFromConf extract the client ca file path from kubelet config
 func kubeletExtractCAFileFromConf(content []byte) (string, error) {
+	var kubeletConfig struct {
+		Authentication struct {
+			X509 struct {
+				ClientCAFile string
+			}
+		}
+	}
 
-	confObj := map[string]interface{}{}
-	err := yaml.Unmarshal(content, &confObj)
+	err := yaml.Unmarshal(content, &kubeletConfig)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to unmarshal kubelet config: %w", err)
 	}
 
-	auth, ok := confObj["authentication"].(map[string]interface{})
-	if !ok {
-		return "", nil
-	}
-
-	x509, ok := auth["x509"].(map[string]interface{})
-	if !ok {
-		return "", nil
-	}
-
-	clientCAFile, ok := x509["clientCAFile"].(string)
-	if !ok {
-		return "", nil
-	}
-
-	return clientCAFile, nil
+	return kubeletConfig.Authentication.X509.ClientCAFile, nil
 }
 
 // Deprecated: use SenseKubeletInfo for more information.
@@ -180,5 +153,5 @@ func SenseKubeletConfigurations() ([]byte, error) {
 	}
 
 	zap.L().Debug("config loaction", zap.String("kubeletConfFileLocation", kubeletConfFileLocation))
-	return ReadKubeletConfig(kubeletConfFileLocation)
+	return ReadKubeletConfig(kubeletProcess.ContaineredPath(kubeletConfFileLocation))
 }

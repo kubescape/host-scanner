@@ -21,6 +21,7 @@ var (
 	ErrNotUnixFS = errors.New("operation not supported by the file system")
 )
 
+// ReadFileOnHostFileSystem reads a file on the host file system.
 func ReadFileOnHostFileSystem(fileName string) ([]byte, error) {
 	return os.ReadFile(hostPath(fileName))
 }
@@ -103,18 +104,9 @@ func MakeFileInfo(filePath string, readContent bool) (*FileInfo, error) {
 	return &ret, nil
 }
 
-// MakeContaineredFileInfo is a wrapper of `MakeChangedRootFileInfo` for container files
-func makeContaineredFileInfo(filePath string, readContent bool, p *ProcessDetails) (*FileInfo, error) {
-	return makeChangedRootFileInfo(filePath, readContent, p.RootDir())
-}
-
-// MakeHostFileInfo is a wrapper of `MakeChangedRootFileInfo` for host files
-func makeHostFileInfo(filePath string, readContent bool) (*FileInfo, error) {
-	return makeChangedRootFileInfo(filePath, readContent, hostFileSystemDefaultLocation)
-}
-
-// MakeHostFileInfo is a wrapper of `MakeFileInfo` for rootDir/filePath
-func makeChangedRootFileInfo(filePath string, readContent bool, rootDir string) (*FileInfo, error) {
+// makeChangedRootFileInfo makes a file info object
+// for the given path on the given root directory.
+func makeChangedRootFileInfo(rootDir string, filePath string, readContent bool) (*FileInfo, error) {
 	fullPath := path.Join(rootDir, filePath)
 	obj, err := MakeFileInfo(fullPath, readContent)
 
@@ -122,6 +114,7 @@ func makeChangedRootFileInfo(filePath string, readContent bool, rootDir string) 
 		return obj, err
 	}
 
+	// Remove `rootDir` from path
 	obj.Path = filePath
 
 	// Username
@@ -143,9 +136,10 @@ func makeChangedRootFileInfo(filePath string, readContent bool, rootDir string) 
 	return obj, nil
 }
 
-// makeHostFileInfoVerbose is wrapper of `MakeHostFileInfo` with error logging
-func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Field) *FileInfo {
-	fileInfo, err := makeHostFileInfo(path, readContent)
+// makeChangedRootFileInfoVerbose makes a file info object
+// for the given path on the given root directory, and with error logging.
+func makeChangedRootFileInfoVerbose(rootDir string, path string, readContent bool, failMsgs ...zap.Field) *FileInfo {
+	fileInfo, err := makeChangedRootFileInfo(rootDir, path, readContent)
 	if err != nil {
 		logArgs := append([]zapcore.Field{
 			zap.String("path", path),
@@ -156,6 +150,32 @@ func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Fiel
 		zap.L().Error("failed to MakeHostFileInfo", logArgs...)
 	}
 	return fileInfo
+}
+
+// MakeContaineredFileInfo makes a file info object
+// for a given process file system view.
+func makeContaineredFileInfo(p *ProcessDetails, filePath string, readContent bool) (*FileInfo, error) {
+	return makeChangedRootFileInfo(p.RootDir(), filePath, readContent)
+}
+
+// MakeHostFileInfo makes a file info object
+// for the given path on the host file system.
+func makeHostFileInfo(filePath string, readContent bool) (*FileInfo, error) {
+	return makeChangedRootFileInfo(hostFileSystemDefaultLocation, filePath, readContent)
+}
+
+// makeHostFileInfoVerbose makes a file info object
+// for the given path on the host file system, and with error logging.
+// It returns nil on error.
+func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Field) *FileInfo {
+	return makeChangedRootFileInfoVerbose(hostFileSystemDefaultLocation, path, readContent, failMsgs...)
+}
+
+// makeContaineredFileInfoVerbose makes a file info object
+// for a given process file system view, and with error logging.
+// It returns nil on error.
+func makeContaineredFileInfoVerbose(p *ProcessDetails, filePath string, readContent bool, failMsgs ...zap.Field) *FileInfo {
+	return makeChangedRootFileInfoVerbose(p.RootDir(), filePath, readContent, failMsgs...)
 }
 
 // makeHostDirFilesInfo iterate over a directory and make a list of
