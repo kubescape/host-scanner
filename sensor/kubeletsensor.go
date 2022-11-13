@@ -124,29 +124,20 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 
 // kubeletExtractCAFileFromConf extract the client ca file path from kubelet config
 func kubeletExtractCAFileFromConf(content []byte) (string, error) {
+	var kubeletConfig struct {
+		Authentication struct {
+			X509 struct {
+				ClientCAFile string
+			}
+		}
+	}
 
-	confObj := map[string]interface{}{}
-	err := yaml.Unmarshal(content, &confObj)
+	err := yaml.Unmarshal(content, &kubeletConfig)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to unmarshal kubelet config: %w", err)
 	}
 
-	auth, ok := confObj["authentication"].(map[string]interface{})
-	if !ok {
-		return "", nil
-	}
-
-	x509, ok := auth["x509"].(map[string]interface{})
-	if !ok {
-		return "", nil
-	}
-
-	clientCAFile, ok := x509["clientCAFile"].(string)
-	if !ok {
-		return "", nil
-	}
-
-	return clientCAFile, nil
+	return kubeletConfig.Authentication.X509.ClientCAFile, nil
 }
 
 // Deprecated: use SenseKubeletInfo for more information.
