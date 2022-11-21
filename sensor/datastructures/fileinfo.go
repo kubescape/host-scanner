@@ -1,9 +1,4 @@
-package sensor
-
-type LinuxSecurityHardeningStatus struct {
-	AppArmor string `json:"appArmor"`
-	SeLinux  string `json:"seLinux"`
-}
+package datastructures
 
 // FileInfo holds information about a file
 type FileInfo struct {

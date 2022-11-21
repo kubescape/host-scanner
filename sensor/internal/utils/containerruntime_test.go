@@ -1,4 +1,4 @@
-package sensor
+package utils
 
 import (
 	"fmt"
@@ -102,4 +102,3 @@ func Test_parseCNIPathsFromConfigCrio(t *testing.T) {
 	}
 
 }
-

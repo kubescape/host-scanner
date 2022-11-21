@@ -6,6 +6,8 @@ import (
 	"path"
 	"strings"
 
+	ds "github.com/armosec/host-sensor/sensor/datastructures"
+	"github.com/armosec/host-sensor/sensor/internal/utils"
 	"go.uber.org/zap"
 )
 
@@ -19,13 +21,13 @@ const (
 func SenseOsRelease() ([]byte, error) {
 	osFileName, err := getOsReleaseFile()
 	if err == nil {
-		return ReadFileOnHostFileSystem(path.Join(etcDirName, osFileName))
+		return utils.ReadFileOnHostFileSystem(path.Join(etcDirName, osFileName))
 	}
 	return []byte{}, fmt.Errorf("failed to find os-release file: %v", err)
 }
 
 func getOsReleaseFile() (string, error) {
-	hostEtcDir := hostPath(etcDirName)
+	hostEtcDir := utils.HostPath(etcDirName)
 	etcDir, err := os.Open(hostEtcDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to open etc dir: %v", err)
@@ -44,17 +46,17 @@ func getOsReleaseFile() (string, error) {
 }
 
 func SenseKernelVersion() ([]byte, error) {
-	return ReadFileOnHostFileSystem(path.Join(procDirName, "version"))
+	return utils.ReadFileOnHostFileSystem(path.Join(procDirName, "version"))
 }
 
 func getAppArmorStatus() string {
 	statusStr := "unloaded"
-	hostAppArmorProfilesFileName := hostPath(appArmorProfilesFileName)
+	hostAppArmorProfilesFileName := utils.HostPath(appArmorProfilesFileName)
 	profFile, err := os.Open(hostAppArmorProfilesFileName)
 	if err == nil {
 		defer profFile.Close()
 		statusStr = "stopped"
-		content, err := ReadFileOnHostFileSystem(appArmorProfilesFileName)
+		content, err := utils.ReadFileOnHostFileSystem(appArmorProfilesFileName)
 		if err == nil && len(content) > 0 {
 			statusStr = string(content)
 		}
@@ -64,11 +66,11 @@ func getAppArmorStatus() string {
 
 func getSELinuxStatus() string {
 	statusStr := "not found"
-	hostAppArmorProfilesFileName := hostPath(seLinuxConfigFileName)
+	hostAppArmorProfilesFileName := utils.HostPath(seLinuxConfigFileName)
 	conFile, err := os.Open(hostAppArmorProfilesFileName)
 	if err == nil {
 		defer conFile.Close()
-		content, err := ReadFileOnHostFileSystem(appArmorProfilesFileName)
+		content, err := utils.ReadFileOnHostFileSystem(appArmorProfilesFileName)
 		if err == nil && len(content) > 0 {
 			statusStr = string(content)
 		}
@@ -76,8 +78,8 @@ func getSELinuxStatus() string {
 	return statusStr
 }
 
-func SenseLinuxSecurityHardening() (*LinuxSecurityHardeningStatus, error) {
-	res := LinuxSecurityHardeningStatus{}
+func SenseLinuxSecurityHardening() (*ds.LinuxSecurityHardeningStatus, error) {
+	res := ds.LinuxSecurityHardeningStatus{}
 
 	res.AppArmor = getAppArmorStatus()
 	res.SeLinux = getSELinuxStatus()

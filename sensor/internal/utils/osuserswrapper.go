@@ -1,4 +1,4 @@
-package sensor
+package utils
 
 import (
 	"io"
@@ -23,7 +23,7 @@ func findUserId(uid string, r io.Reader) (*user.User, error)
 //go:linkname findGroupId os/user.findGroupId
 func findGroupId(id string, r io.Reader) (*user.Group, error)
 
-//goLlinkname lineFunc os/user lineFunc
+// goLlinkname lineFunc os/user lineFunc
 type lineFunc func(line []byte) (v any, err error)
 
 const userFile = "/etc/passwd"

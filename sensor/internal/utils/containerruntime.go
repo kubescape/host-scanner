@@ -1,6 +1,7 @@
-package sensor
+package utils
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -33,6 +34,16 @@ const (
 	crioSock       = "/crio.sock"
 	containerdSock = "/containerd.sock"
 	cridockerdSock = "/cri-dockerd.sock"
+)
+
+// Errors
+var (
+	// ErrDockershimRT means the used container runtime is dockershim.
+	// no kubelet flags or --container-runtime not 'remote' means dockershim.sock which is not supported
+	ErrDockershimRT = errors.New("dockershim runtime is not supported")
+
+	// ErrCRINotFound means no container runtime was found.
+	ErrCRINotFound = errors.New("no container runtime was found")
 )
 
 // A containerRuntimeProperties holds properties of a container runtime.
@@ -77,15 +88,15 @@ type ContainerRuntimeInfo struct {
 }
 
 // getCNIConfigPath returns CNI config dir from a running container runtime. Flow:
-// 	1. Find CNI config dir through kubelet flag (--container-runtime-endpoint). If not found:
-// 	2. Find CNI config dir through process of supported container runtimes. If not found:
-// 	3. return CNI config dir default that is defined in the container runtime properties.
-func getCNIConfigPath() string {
+//  1. Find CNI config dir through kubelet flag (--container-runtime-endpoint). If not found:
+//  2. Find CNI config dir through process of supported container runtimes. If not found:
+//  3. return CNI config dir default that is defined in the container runtime properties.
+func GetCNIConfigPath(kubeletProc *ProcessDetails) string {
 
 	// Attempting to find CR from kubelet.
-	CNIConfigDir := CNIConfigDirFromKubelet()
+	CNIConfigDir, err := CNIConfigDirFromKubelet(kubeletProc)
 
-	if CNIConfigDir != "" {
+	if err == nil {
 		return CNIConfigDir
 	}
 
@@ -142,9 +153,9 @@ func (cr *ContainerRuntimeInfo) getConfigPath() string {
 
 // getCNIConfigDirFromConfig - returns CNI Config dir from the container runtime config file if exist.
 // flow:
-// 	1. Getting container runtime configs directory path and container runtime config path.
-// 	2. Build a decending ordered list of configs from configs directory and adding the config path as last. This is the order of precedence for configuration.
-// 	3. Get CNI config path from ordered list. If not found, return empty string.
+//  1. Getting container runtime configs directory path and container runtime config path.
+//  2. Build a decending ordered list of configs from configs directory and adding the config path as last. This is the order of precedence for configuration.
+//  3. Get CNI config path from ordered list. If not found, return empty string.
 func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig() string {
 
 	var configDirFilesFullPath []string
@@ -225,9 +236,9 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromProcess() string {
 }
 
 // getCNIConfigDir - returns CNI config dir of the container runtime.
-// 	1. Get dir from container runtime process flags. If not found:
-// 	2. Get dir from container runtime config file(s). If not found:
-// 	3. return default CNI config dir
+//  1. Get dir from container runtime process flags. If not found:
+//  2. Get dir from container runtime config file(s). If not found:
+//  3. return default CNI config dir
 func (cr *ContainerRuntimeInfo) getCNIConfigDir() string {
 
 	CNIConfigDir := cr.getCNIConfigDirFromProcess()
@@ -293,7 +304,7 @@ func newContainerRuntime(CRIKind string) (*ContainerRuntimeInfo, error) {
 	}
 
 	cr.process = p
-	cr.rootDir = hostFileSystemDefaultLocation
+	cr.rootDir = HostFileSystemDefaultLocation
 
 	return cr, nil
 
@@ -320,10 +331,12 @@ func getContainerRuntimeFromProcess() (*ContainerRuntimeInfo, error) {
 func parseCNIConfigDirFromConfigContainerd(configPath string) (string, error) {
 
 	cniConfig := struct {
-		Plugings map[string]struct {
-			CNI struct {
-				CNIConfigDir string `toml:"conf_dir"`
-			} `toml:"cni"`
+		Plugins struct {
+			IoContainerdGrpcV1CRI struct {
+				CNI struct {
+					CNIConfigDir string `toml:"conf_dir"`
+				} `toml:"cni"`
+			} `toml:"io.containerd.grpc.v1.cri"`
 		} `toml:"plugins"`
 	}{}
 
@@ -333,15 +346,16 @@ func parseCNIConfigDirFromConfigContainerd(configPath string) (string, error) {
 		return "", err
 	}
 
-	return cniConfig.Plugings[containerdConfigSection].CNI.CNIConfigDir, nil
+	return cniConfig.Plugins.IoContainerdGrpcV1CRI.CNI.CNIConfigDir, nil
 }
 
 // parseCNIConfigDirFromConfigCrio - parses and returns cni config dir from a cri-o config structure. If not found returns empty string.
 func parseCNIConfigDirFromConfigCrio(configPath string) (string, error) {
-
 	cniConfig := struct {
-		Crio map[string]struct {
-			CNIConfigDir string `toml:"network_dir"`
+		Crio struct {
+			Network struct {
+				NetworkDir string `toml:"network_dir"`
+			} `toml:"network"`
 		} `toml:"crio"`
 	}{}
 
@@ -351,60 +365,47 @@ func parseCNIConfigDirFromConfigCrio(configPath string) (string, error) {
 		return "", err
 	}
 
-	return cniConfig.Crio["network"].CNIConfigDir, nil
+	return cniConfig.Crio.Network.NetworkDir, nil
 }
 
 // CNIConfigDirFromKubelet - returns cni config dir by kubelet --container-runtime-endpoint flag. Returns empty string if not found.
 // A specific case is cri-dockerd.sock process which it's container runtime is determined by kubernetes docs.
-func CNIConfigDirFromKubelet() string {
+func CNIConfigDirFromKubelet(proc *ProcessDetails) (string, error) {
 
-	var containerProcessSock string
-	proc, err := LocateKubeletProcess()
-	if err != nil {
-		zap.L().Debug("CNIConfigDirFromKubelet - failed to locate kube-proxy process")
-		return ""
-	}
-
+	// Try from kubelet process flags
 	CNIConfigDir, _ := proc.GetArg(kubeletCNIConfigDir)
-
 	if CNIConfigDir != "" {
-		return CNIConfigDir
+		return CNIConfigDir, nil
 	}
 
+	// Try from kubelet process CRI socket
 	crEndpoint, crEndPointOK := proc.GetArg(kubeletContainerRuntimeEndPoint)
-
 	if crEndpoint == "" {
 		cr, crOK := proc.GetArg(kubeletContainerRuntime)
-
 		if (!crEndPointOK && !crOK) || (cr != "remote") {
-			// From docs: "If your nodes use Kubernetes v1.23 and earlier and these flags aren't present
-			// or if the --container-runtime flag is not remote, you use the dockershim socket with Docker Engine."
-			zap.L().Debug("CNIConfigDirFromKubelet - no kubelet flags or --container-runtime not 'remote' means dockershim.sock which is not supported")
-			return ""
-
+			// From k8s docs (https://kubernetes.io/docs/tasks/administer-cluster/migrating-from-dockershim/find-out-runtime-you-use/#which-endpoint):
+			// 	"
+			// 	If your nodes use Kubernetes v1.23 and earlier and these flags aren't present
+			// 	or if the --container-runtime flag is not remote, you use the dockershim socket with Docker Engine.
+			// 	"
+			return "", ErrDockershimRT
 		}
-		// Uknown
-		zap.L().Debug("CNIConfigDirFromKubelet - failed to find Container Runtime EndPoint")
-		return ""
-
+		// Unknown
+		return "", ErrCRINotFound
 	}
-	// there is crEndpoint
-	zap.L().Debug("crEndPoint from kubelete found", zap.String("crEndPoint", crEndpoint))
 
-	containerProcessSock = crEndpoint
-
+	containerProcessSock := crEndpoint
 	if strings.HasSuffix(crEndpoint, cridockerdSock) {
 		// Check specific case where the end point is cri-dockerd. If so, then in the absence of cni paths configuration for cri-dockerd process,
 		// we check containerd (which is using cri-dockerd as a CRI plugin)
 		containerProcessSock = containerdSock
-
 	}
 
 	crObj, err := newContainerRuntime(containerProcessSock)
 
 	if err != nil {
-		return ""
+		return "", err
 	}
 
-	return crObj.getCNIConfigDir()
+	return crObj.getCNIConfigDir(), nil
 }

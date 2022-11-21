@@ -1,4 +1,4 @@
-package sensor
+package utils
 
 import (
 	"bytes"
@@ -10,6 +10,10 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+)
+
+const (
+	procDirName = "/proc"
 )
 
 type ProcessDetails struct {
