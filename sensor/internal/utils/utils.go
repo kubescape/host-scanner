@@ -2,19 +2,13 @@ package utils
 
 import (
 	"errors"
-	"fmt"
-	"io"
 	"os"
 	"path"
 	"syscall"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-)
 
-const (
-	kubeConfigArgName = "--kubeconfig"
-	maxRecursionDepth = 10
+	ds "github.com/armosec/host-sensor/sensor/datastructures"
 )
 
 var (
@@ -23,11 +17,12 @@ var (
 
 // ReadFileOnHostFileSystem reads a file on the host file system.
 func ReadFileOnHostFileSystem(fileName string) ([]byte, error) {
-	return os.ReadFile(hostPath(fileName))
+	zap.L().Debug("reading file on host file system", zap.String("path", HostPath(fileName)))
+	return os.ReadFile(HostPath(fileName))
 }
 
-func hostPath(filePath string) string {
-	return path.Join(hostFileSystemDefaultLocation, filePath)
+func HostPath(filePath string) string {
+	return path.Join(HostFileSystemDefaultLocation, filePath)
 }
 
 // GetFilePermissions returns file permissions as int.
@@ -70,11 +65,11 @@ func IsPathExists(filename string) bool {
 	return !os.IsNotExist(err)
 }
 
-// MakeFileInfo returns a `FileInfo` object for given path
+// MakeFileInfo returns a `ds.FileInfo` object for given path
 // If `readContent` is set to `true`, it adds the file content
 // On access error, it returns the error as is
-func MakeFileInfo(filePath string, readContent bool) (*FileInfo, error) {
-	ret := FileInfo{Path: filePath}
+func MakeFileInfo(filePath string, readContent bool) (*ds.FileInfo, error) {
+	ret := ds.FileInfo{Path: filePath}
 
 	zap.L().Debug("making file info", zap.String("path", filePath))
 
@@ -87,7 +82,7 @@ func MakeFileInfo(filePath string, readContent bool) (*FileInfo, error) {
 
 	// Ownership
 	uid, gid, err := GetFileUNIXOwnership(filePath)
-	ret.Ownership = &FileOwnership{UID: uid, GID: gid}
+	ret.Ownership = &ds.FileOwnership{UID: uid, GID: gid}
 	if err != nil {
 		ret.Ownership.Err = err.Error()
 	}
@@ -104,9 +99,9 @@ func MakeFileInfo(filePath string, readContent bool) (*FileInfo, error) {
 	return &ret, nil
 }
 
-// makeChangedRootFileInfo makes a file info object
+// MakeChangedRootFileInfo makes a file info object
 // for the given path on the given root directory.
-func makeChangedRootFileInfo(rootDir string, filePath string, readContent bool) (*FileInfo, error) {
+func MakeChangedRootFileInfo(rootDir string, filePath string, readContent bool) (*ds.FileInfo, error) {
 	fullPath := path.Join(rootDir, filePath)
 	obj, err := MakeFileInfo(fullPath, readContent)
 
@@ -136,103 +131,14 @@ func makeChangedRootFileInfo(rootDir string, filePath string, readContent bool) 
 	return obj, nil
 }
 
-// makeChangedRootFileInfoVerbose makes a file info object
-// for the given path on the given root directory, and with error logging.
-func makeChangedRootFileInfoVerbose(rootDir string, path string, readContent bool, failMsgs ...zap.Field) *FileInfo {
-	fileInfo, err := makeChangedRootFileInfo(rootDir, path, readContent)
-	if err != nil {
-		logArgs := append([]zapcore.Field{
-			zap.String("path", path),
-			zap.Error(err),
-		},
-			failMsgs...,
-		)
-		zap.L().Error("failed to MakeHostFileInfo", logArgs...)
-	}
-	return fileInfo
-}
-
 // MakeContaineredFileInfo makes a file info object
 // for a given process file system view.
-func makeContaineredFileInfo(p *ProcessDetails, filePath string, readContent bool) (*FileInfo, error) {
-	return makeChangedRootFileInfo(p.RootDir(), filePath, readContent)
+func MakeContaineredFileInfo(p *ProcessDetails, filePath string, readContent bool) (*ds.FileInfo, error) {
+	return MakeChangedRootFileInfo(p.RootDir(), filePath, readContent)
 }
 
 // MakeHostFileInfo makes a file info object
 // for the given path on the host file system.
-func makeHostFileInfo(filePath string, readContent bool) (*FileInfo, error) {
-	return makeChangedRootFileInfo(hostFileSystemDefaultLocation, filePath, readContent)
-}
-
-// makeHostFileInfoVerbose makes a file info object
-// for the given path on the host file system, and with error logging.
-// It returns nil on error.
-func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Field) *FileInfo {
-	return makeChangedRootFileInfoVerbose(hostFileSystemDefaultLocation, path, readContent, failMsgs...)
-}
-
-// makeContaineredFileInfoVerbose makes a file info object
-// for a given process file system view, and with error logging.
-// It returns nil on error.
-func makeContaineredFileInfoVerbose(p *ProcessDetails, filePath string, readContent bool, failMsgs ...zap.Field) *FileInfo {
-	return makeChangedRootFileInfoVerbose(p.RootDir(), filePath, readContent, failMsgs...)
-}
-
-// makeHostDirFilesInfo iterate over a directory and make a list of
-// file infos for all the files inside it. If `recursive` is set to true,
-// the file infos will be added recursively until `maxRecursionDepth` is reached
-func makeHostDirFilesInfo(dir string, recursive bool, fileInfos *([]*FileInfo), recursionLevel int) ([]*FileInfo, error) {
-	dirInfo, err := os.Open(hostPath(dir))
-	if err != nil {
-		return nil, fmt.Errorf("failed to open dir at %s: %w", dir, err)
-	}
-	defer dirInfo.Close()
-
-	if fileInfos == nil {
-		fileInfos = &([]*FileInfo{})
-	}
-
-	var fileNames []string
-	for fileNames, err = dirInfo.Readdirnames(100); err == nil; fileNames, err = dirInfo.Readdirnames(100) {
-		for i := range fileNames {
-			filePath := path.Join(dir, fileNames[i])
-			fileInfo := makeHostFileInfoVerbose(filePath,
-				false,
-				zap.String("in", "makeHostDirFilesInfo"),
-				zap.String("dir", dir),
-			)
-
-			if fileInfo != nil {
-				*fileInfos = append(*fileInfos, fileInfo)
-			}
-
-			if !recursive {
-				continue
-			}
-
-			// Check if is directory
-			stats, err := os.Stat(hostPath(filePath))
-			if err != nil {
-				zap.L().Error("failed to get file stats",
-					zap.String("in", "makeHostDirFilesInfo"),
-					zap.String("path", filePath))
-				continue
-			}
-			if stats.IsDir() {
-				if recursionLevel+1 == maxRecursionDepth {
-					zap.L().Error("max recusrion depth exceeded",
-						zap.String("in", "makeHostDirFilesInfo"),
-						zap.String("path", filePath))
-					continue
-				}
-				makeHostDirFilesInfo(filePath, recursive, fileInfos, recursionLevel+1)
-			}
-		}
-	}
-
-	if errors.Is(err, io.EOF) {
-		err = nil
-	}
-
-	return *fileInfos, err
+func makeHostFileInfo(filePath string, readContent bool) (*ds.FileInfo, error) {
+	return MakeChangedRootFileInfo(HostFileSystemDefaultLocation, filePath, readContent)
 }
