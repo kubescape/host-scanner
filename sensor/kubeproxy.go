@@ -3,8 +3,8 @@ package sensor
 import (
 	"fmt"
 
-	ds "github.com/armosec/host-sensor/sensor/datastructures"
-	"github.com/armosec/host-sensor/sensor/internal/utils"
+	ds "github.com/kubescape/host-scanner/sensor/datastructures"
+	"github.com/kubescape/host-scanner/sensor/internal/utils"
 	"go.uber.org/zap"
 )
 

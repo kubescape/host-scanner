@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	ds "github.com/armosec/host-sensor/sensor/datastructures"
+	ds "github.com/kubescape/host-scanner/sensor/datastructures"
 )
 
 var (

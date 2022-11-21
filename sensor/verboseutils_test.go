@@ -3,7 +3,7 @@ package sensor
 import (
 	"testing"
 
-	"github.com/armosec/host-sensor/sensor/internal/utils"
+	"github.com/kubescape/host-scanner/sensor/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/armosec/host-sensor/sensor"
+	"github.com/kubescape/host-scanner/sensor"
 	"go.uber.org/zap"
 )
 

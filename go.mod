@@ -1,4 +1,4 @@
-module github.com/armosec/host-sensor
+module github.com/kubescape/host-scanner
 
 go 1.18
 
@@ -9,13 +9,13 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/weaveworks/procspy v0.0.0-20150706124340-cb970aa190c3
 	go.uber.org/zap v1.19.1
+	gopkg.in/yaml.v3 v3.0.1
 	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
