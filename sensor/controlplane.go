@@ -53,6 +53,9 @@ type ControlPlaneInfo struct {
 
 	// The name of the running CNI
 	CNIName string `json:"CNIName,omitempty"`
+
+	// Has access to cloud provider meta data API
+	ProviderMetaDataAPIAccess bool `json:"hasMetaDataAPIAccess,omitempty"`
 }
 
 // K8sProcessInfo holds information about a k8s process
@@ -318,6 +321,8 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	// get CNI name
 	ret.CNIName = getCNIName()
 
+	ret.ProviderMetaDataAPIAccess = hasMetaDataAPIAccess()
+
 	// If wasn't able to find any data - this is not a control plane
 	if ret.APIServerInfo == nil &&
 		ret.ControllerManagerInfo == nil &&
@@ -397,4 +402,55 @@ func getCNIName() string {
 	zap.L().Debug("No supported CNI process was found")
 
 	return ""
+}
+
+// hasMetaDataAPIAccess - checks if there is an access to cloud provider meta data
+func hasMetaDataAPIAccess() bool {
+	client := &http.Client{}
+
+	// check if a url has access from node.
+	hasAccess := func(url string, header_name string, header_value string) bool {
+		resp, err := client.Get(url)
+		if err != nil {
+			return false
+		}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return false
+		}
+
+		if header_name != "" && header_value != "" {
+			req.Header.Add(header_name, header_value)
+		}
+
+		resp, err = client.Do(req)
+		if err == nil {
+			if resp.StatusCode == 200 {
+				return true
+			}
+		}
+		return false
+	}
+
+	res := hasAccess("http://169.254.169.254/computeMetadata/v1/?alt=json&recursive=true", "Metadata-Flavor", "Google")
+
+	if res {
+		return true
+	}
+
+	res = hasAccess("http://169.254.169.254/metadata/instance?api-version=2021-02-01", "Metadata", "true")
+
+	if res {
+		return true
+	}
+
+	res = hasAccess("http://169.254.169.254/latest/meta-data/local-hostname", "", "")
+
+	if res {
+		return true
+	}
+
+	return false
+
 }
