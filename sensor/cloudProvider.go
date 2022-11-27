@@ -9,7 +9,7 @@ import (
 // CloudProviderInfo holds information about the Cloud Provider
 type CloudProviderInfo struct {
 	// Has access to cloud provider meta data API
-	ProviderMetaDataAPIAccess bool `json:"hasMetaDataAPIAccess,omitempty"`
+	ProviderMetaDataAPIAccess bool `json:"providerMetaDataAPIAccess,omitempty"`
 }
 
 // SenseCloudProviderInfo returns `CloudProviderInfo`
