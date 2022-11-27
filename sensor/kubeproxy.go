@@ -3,6 +3,8 @@ package sensor
 import (
 	"fmt"
 
+	ds "github.com/kubescape/host-scanner/sensor/datastructures"
+	"github.com/kubescape/host-scanner/sensor/internal/utils"
 	"go.uber.org/zap"
 )
 
@@ -13,7 +15,7 @@ const (
 // KubeProxyInfo holds information about kube-proxy process
 type KubeProxyInfo struct {
 	// Information about the kubeconfig file of kube-proxy
-	KubeConfigFile *FileInfo `json:"kubeConfigFile,omitempty"`
+	KubeConfigFile *ds.FileInfo `json:"kubeConfigFile,omitempty"`
 
 	// Raw cmd line of kubelet process
 	CmdLine string `json:"cmdLine"`
@@ -24,7 +26,7 @@ func SenseKubeProxyInfo() (*KubeProxyInfo, error) {
 	ret := KubeProxyInfo{}
 
 	// Get process
-	proc, err := LocateProcessByExecSuffix(kubeProxyExe)
+	proc, err := utils.LocateProcessByExecSuffix(kubeProxyExe)
 	if err != nil {
 		return &ret, fmt.Errorf("failed to locate kube-proxy process: %w", err)
 	}

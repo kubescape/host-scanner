@@ -8,6 +8,9 @@ import (
 
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
+
+	ds "github.com/kubescape/host-scanner/sensor/datastructures"
+	"github.com/kubescape/host-scanner/sensor/internal/utils"
 )
 
 const (
@@ -41,12 +44,12 @@ type ControlPlaneInfo struct {
 	APIServerInfo         *ApiServerInfo  `json:"APIServerInfo,omitempty"`
 	ControllerManagerInfo *K8sProcessInfo `json:"controllerManagerInfo,omitempty"`
 	SchedulerInfo         *K8sProcessInfo `json:"schedulerInfo,omitempty"`
-	EtcdConfigFile        *FileInfo       `json:"etcdConfigFile,omitempty"`
-	EtcdDataDir           *FileInfo       `json:"etcdDataDir,omitempty"`
-	AdminConfigFile       *FileInfo       `json:"adminConfigFile,omitempty"`
-	PKIDIr                *FileInfo       `json:"PKIDir,omitempty"`
-	PKIFiles              []*FileInfo     `json:"PKIFiles,omitempty"`
-	CNIConfigFiles        []*FileInfo     `json:"CNIConfigFiles,omitempty"`
+	EtcdConfigFile        *ds.FileInfo    `json:"etcdConfigFile,omitempty"`
+	EtcdDataDir           *ds.FileInfo    `json:"etcdDataDir,omitempty"`
+	AdminConfigFile       *ds.FileInfo    `json:"adminConfigFile,omitempty"`
+	PKIDIr                *ds.FileInfo    `json:"PKIDir,omitempty"`
+	PKIFiles              []*ds.FileInfo  `json:"PKIFiles,omitempty"`
+	CNIConfigFiles        []*ds.FileInfo  `json:"CNIConfigFiles,omitempty"`
 
 	// The name of the running CNI
 	CNIName string `json:"CNIName,omitempty"`
@@ -55,31 +58,31 @@ type ControlPlaneInfo struct {
 // K8sProcessInfo holds information about a k8s process
 type K8sProcessInfo struct {
 	// Information about the process specs file (if relevant)
-	SpecsFile *FileInfo `json:"specsFile,omitempty"`
+	SpecsFile *ds.FileInfo `json:"specsFile,omitempty"`
 
 	// Information about the process config file (if relevant)
-	ConfigFile *FileInfo `json:"configFile,omitempty"`
+	ConfigFile *ds.FileInfo `json:"configFile,omitempty"`
 
 	// Information about the process kubeconfig file (if relevant)
-	KubeConfigFile *FileInfo `json:"kubeConfigFile,omitempty"`
+	KubeConfigFile *ds.FileInfo `json:"kubeConfigFile,omitempty"`
 
 	// Information about the process client ca file (if relevant)
-	ClientCAFile *FileInfo `json:"clientCAFile,omitempty"`
+	ClientCAFile *ds.FileInfo `json:"clientCAFile,omitempty"`
 
 	// Raw cmd line of the process
 	CmdLine string `json:"cmdLine"`
 }
 
 type ApiServerInfo struct {
-	EncryptionProviderConfigFile *FileInfo `json:"encryptionProviderConfigFile,omitempty"`
-	AuditPolicyFile              *FileInfo `json:"auditPolicyFile,omitempty"`
+	EncryptionProviderConfigFile *ds.FileInfo `json:"encryptionProviderConfigFile,omitempty"`
+	AuditPolicyFile              *ds.FileInfo `json:"auditPolicyFile,omitempty"`
 	*K8sProcessInfo              `json:",inline"`
 }
 
 // getEtcdDataDir find the `data-dir` path of etcd k8s component
 func getEtcdDataDir() (string, error) {
 
-	proc, err := LocateProcessByExecSuffix(etcdExe)
+	proc, err := utils.LocateProcessByExecSuffix(etcdExe)
 	if err != nil {
 		return "", fmt.Errorf("failed to locate kube-proxy process: %w", err)
 	}
@@ -92,12 +95,12 @@ func getEtcdDataDir() (string, error) {
 	return dataDir, nil
 }
 
-func makeProcessInfoVerbose(p *ProcessDetails, specsPath, configPath, kubeConfigPath, clientCaPath string) *K8sProcessInfo {
+func makeProcessInfoVerbose(p *utils.ProcessDetails, specsPath, configPath, kubeConfigPath, clientCaPath string) *K8sProcessInfo {
 	ret := K8sProcessInfo{}
 
 	// init files
 	files := []struct {
-		data **FileInfo
+		data **ds.FileInfo
 		path string
 		file string
 	}{
@@ -132,21 +135,21 @@ func makeProcessInfoVerbose(p *ProcessDetails, specsPath, configPath, kubeConfig
 	return &ret
 }
 
-// makeAPIserverEncryptionProviderConfigFile returns a FileInfo object for the encryption provider config file of the API server. Required for https://workbench.cisecurity.org/sections/1126663/recommendations/1838675
-func makeAPIserverEncryptionProviderConfigFile(p *ProcessDetails) *FileInfo {
+// makeAPIserverEncryptionProviderConfigFile returns a ds.FileInfo object for the encryption provider config file of the API server. Required for https://workbench.cisecurity.org/sections/1126663/recommendations/1838675
+func makeAPIserverEncryptionProviderConfigFile(p *utils.ProcessDetails) *ds.FileInfo {
 	encryptionProviderConfigPath, ok := p.GetArg(apiEncryptionProviderConfigArg)
 	if !ok {
 		zap.L().Warn("failed to find encryption provider config path", zap.String("in", "makeAPIserverEncryptionProviderConfigFile"))
 		return nil
 	}
 
-	fi, err := makeContaineredFileInfo(p, encryptionProviderConfigPath, true)
+	fi, err := utils.MakeContaineredFileInfo(p, encryptionProviderConfigPath, true)
 	if err != nil {
 		zap.L().Warn("failed to create encryption provider config file info", zap.Error(err))
 		return nil
 	}
 
-	// remove sensetive data
+	// remove sensitive data
 	data := map[string]interface{}{}
 	err = yaml.Unmarshal(fi.Content, &data)
 	if err != nil {
@@ -220,8 +223,8 @@ func removeEncryptionProviderConfigSecrets(data map[string]interface{}) {
 	data["resources"] = resources
 }
 
-// makeAPIserverAuditPolicyFile returns a FileInfo object for an audit policy file of the API server. Required for https://workbench.cisecurity.org/sections/1126663/recommendations/1838675
-func makeAPIserverAuditPolicyFile(p *ProcessDetails) *FileInfo {
+// makeAPIserverAuditPolicyFile returns a ds.FileInfo object for an audit policy file of the API server. Required for https://workbench.cisecurity.org/sections/1126663/recommendations/1838675
+func makeAPIserverAuditPolicyFile(p *utils.ProcessDetails) *ds.FileInfo {
 	auditPolicyFilePath, ok := p.GetArg(auditPolicyFileArg)
 	if !ok {
 		zap.L().Info("audit-policy-file argument was not set ", zap.String("in", "makeAPIserverAuditPolicyFile"))
@@ -240,7 +243,7 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 
 	debugInfo := zap.String("in", "SenseControlPlaneInfo")
 
-	apiProc, err := LocateProcessByExecSuffix(apiServerExe)
+	apiProc, err := utils.LocateProcessByExecSuffix(apiServerExe)
 	if err == nil {
 		ret.APIServerInfo = &ApiServerInfo{}
 		ret.APIServerInfo.K8sProcessInfo = makeProcessInfoVerbose(apiProc, apiServerSpecsPath, "", "", "")
@@ -250,14 +253,14 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
 	}
 
-	controllerMangerProc, err := LocateProcessByExecSuffix(controllerManagerExe)
+	controllerMangerProc, err := utils.LocateProcessByExecSuffix(controllerManagerExe)
 	if err == nil {
 		ret.ControllerManagerInfo = makeProcessInfoVerbose(controllerMangerProc, controllerManagerSpecsPath, controllerManagerConfigPath, "", "")
 	} else {
 		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
 	}
 
-	SchedulerProc, err := LocateProcessByExecSuffix(schedulerExe)
+	SchedulerProc, err := utils.LocateProcessByExecSuffix(schedulerExe)
 	if err == nil {
 		ret.SchedulerInfo = makeProcessInfoVerbose(SchedulerProc, schedulerSpecsPath, schedulerConfigPath, "", "")
 	} else {
@@ -286,7 +289,7 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 	)
 
 	// PKIFiles
-	ret.PKIFiles, err = makeHostDirFilesInfo(pkiDir, true, nil, 0)
+	ret.PKIFiles, err = makeHostDirFilesInfoVerbose(pkiDir, true, nil, 0)
 	if err != nil {
 		zap.L().Error("SenseControlPlaneInfo failed to get PKIFiles info", zap.Error(err))
 	}
@@ -333,16 +336,21 @@ func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
 }
 
 // makeCNIConfigFilesInfo - returns a list of FileInfos of cni config files.
-func makeCNIConfigFilesInfo() ([]*FileInfo, error) {
+func makeCNIConfigFilesInfo() ([]*ds.FileInfo, error) {
 	// *** Start handling CNI Files
-	CNIConfigDir := getCNIConfigPath()
+	kubeletProc, err := LocateKubeletProcess()
+	if err != nil {
+		return nil, err
+	}
+
+	CNIConfigDir := utils.GetCNIConfigPath(kubeletProc)
 
 	if CNIConfigDir == "" {
 		return nil, fmt.Errorf("no CNI Config dir found in getCNIConfigPath")
 	}
 
 	//Getting CNI config files
-	CNIConfigInfo, err := makeHostDirFilesInfo(CNIConfigDir, true, nil, 0)
+	CNIConfigInfo, err := makeHostDirFilesInfoVerbose(CNIConfigDir, true, nil, 0)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to makeHostDirFilesInfo for CNIConfigDir %s: %w", CNIConfigDir, err)
@@ -371,7 +379,7 @@ func getCNIName() string {
 	}
 
 	for _, cni := range supportedCNIs {
-		p, err := LocateProcessByExecSuffix(cni.processSuffix)
+		p, err := utils.LocateProcessByExecSuffix(cni.processSuffix)
 
 		if p != nil {
 			zap.L().Debug("CNI process found", zap.String("name", cni.name))

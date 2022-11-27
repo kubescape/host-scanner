@@ -1,4 +1,4 @@
-package sensor
+package utils
 
 import (
 	"testing"

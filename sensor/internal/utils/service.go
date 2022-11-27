@@ -1,4 +1,4 @@
-package sensor
+package utils
 
 import (
 	"context"
@@ -27,7 +27,7 @@ var (
 )
 
 func newSystemDbusConnection() (*dbus.Conn, error) {
-	systemBusPath := "unix:path=" + hostPath("/run/dbus/system_bus_socket")
+	systemBusPath := "unix:path=" + HostPath("/run/dbus/system_bus_socket")
 	d, err := dbus.Dial(systemBusPath)
 	if err != nil {
 		return d, err
@@ -40,11 +40,11 @@ func newSystemDbusConnection() (*dbus.Conn, error) {
 	return d, err
 }
 
-// getKubeletServiceFiles all the service files associated with the kubelet service.
-func getKubeletServiceFiles(kubeletPid int) ([]string, error) {
+// GetKubeletServiceFiles all the service files associated with the kubelet service.
+func GetKubeletServiceFiles(kubeletPid int) ([]string, error) {
 
 	// First try to get the service files from systemd daemon
-	configDir, err := getServiceFilesByPIDSystemd(kubeletPid)
+	configDir, err := GetServiceFilesByPIDSystemd(kubeletPid)
 	if err != nil {
 		zap.L().Debug("failed to get service files by PID from systemd", zap.Error(err))
 	}
@@ -55,7 +55,7 @@ func getKubeletServiceFiles(kubeletPid int) ([]string, error) {
 		configDir = kubeletSystemdServiceConfigDir
 	}
 
-	files, err := os.ReadDir(hostPath(configDir))
+	files, err := os.ReadDir(HostPath(configDir))
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +68,8 @@ func getKubeletServiceFiles(kubeletPid int) ([]string, error) {
 	return ret, nil
 }
 
-// getServiceFilesByPIDSystemd returns the serivce config directory for a given process id.
-func getServiceFilesByPIDSystemd(pid int) (string, error) {
+// GetServiceFilesByPIDSystemd returns the serivce config directory for a given process id.
+func GetServiceFilesByPIDSystemd(pid int) (string, error) {
 	conn, err := systemd_debus.NewConnection(newSystemDbusConnection)
 	if err != nil {
 		return "", err
@@ -91,7 +91,7 @@ func getServiceFilesByPIDSystemd(pid int) (string, error) {
 
 	// Find the service override files path (if any)
 	unitDirName := unitName + ".d"
-	configDir := getExistsPath(hostFileSystemDefaultLocation,
+	configDir := getExistsPath(HostFileSystemDefaultLocation,
 		path.Join(systemdPkgDir, unitDirName),
 		path.Join(systemdAdminDir, unitDirName),
 	)

@@ -3,6 +3,8 @@ package sensor
 import (
 	"fmt"
 
+	ds "github.com/kubescape/host-scanner/sensor/datastructures"
+	"github.com/kubescape/host-scanner/sensor/internal/utils"
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 )
@@ -22,39 +24,39 @@ const (
 type KubeletInfo struct {
 	// ServiceFile is a list of files used to configure the kubelet service.
 	// Most of the times it will be a single file, under /etc/systemd/system/kubelet.service.d.
-	ServiceFiles []FileInfo `json:"serviceFiles,omitempty"`
+	ServiceFiles []ds.FileInfo `json:"serviceFiles,omitempty"`
 
 	// Information about kubelete config file
-	ConfigFile *FileInfo `json:"configFile,omitempty"`
+	ConfigFile *ds.FileInfo `json:"configFile,omitempty"`
 
 	// Information about the kubeconfig file of kubelet
-	KubeConfigFile *FileInfo `json:"kubeConfigFile,omitempty"`
+	KubeConfigFile *ds.FileInfo `json:"kubeConfigFile,omitempty"`
 
 	// Information about the client ca file of kubelet (if exist)
-	ClientCAFile *FileInfo `json:"clientCAFile,omitempty"`
+	ClientCAFile *ds.FileInfo `json:"clientCAFile,omitempty"`
 
 	// Raw cmd line of kubelet process
 	CmdLine string `json:"cmdLine"`
 }
 
-func LocateKubeletProcess() (*ProcessDetails, error) {
-	return LocateProcessByExecSuffix(kubeletProcessSuffix)
+func LocateKubeletProcess() (*utils.ProcessDetails, error) {
+	return utils.LocateProcessByExecSuffix(kubeletProcessSuffix)
 }
 
 func ReadKubeletConfig(kubeletConfArgs string) ([]byte, error) {
-	conte, err := ReadFileOnHostFileSystem(kubeletConfArgs)
+	conte, err := utils.ReadFileOnHostFileSystem(kubeletConfArgs)
 	zap.L().Debug("raw content", zap.ByteString("cont", conte))
 	return conte, err
 }
 
-func makeKubeletServiceFilesInfo(pid int) []FileInfo {
-	files, err := getKubeletServiceFiles(pid)
+func makeKubeletServiceFilesInfo(pid int) []ds.FileInfo {
+	files, err := utils.GetKubeletServiceFiles(pid)
 	if err != nil {
 		zap.L().Warn("failed to getKubeletServiceFiles", zap.Error(err))
 		return nil
 	}
 
-	serviceFiles := []FileInfo{}
+	serviceFiles := []ds.FileInfo{}
 	for _, file := range files {
 		info := makeHostFileInfoVerbose(file, false, zap.String("in", "makeProcessInfoVerbose"))
 		if info != nil {
