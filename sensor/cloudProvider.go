@@ -1,9 +1,8 @@
 package sensor
 
 import (
-	"net/http"
-
 	"github.com/armosec/utils-go/httputils"
+	"github.com/kubescape/host-scanner/sensor/internal/utils"
 )
 
 // CloudProviderInfo holds information about the Cloud Provider
@@ -43,7 +42,8 @@ func SenseCloudProviderInfo() (*CloudProviderInfo, error) {
 
 // hasMetaDataAPIAccess - checks if there is an access to cloud provider meta data
 func hasMetaDataAPIAccess() bool {
-	client := &http.Client{}
+	client := utils.GetHttpClient()
+	client.Timeout = 1000000000
 
 	for _, req := range MetaDataAPIRequests {
 		res, err := httputils.HttpGet(client, req.url, req.headers)
