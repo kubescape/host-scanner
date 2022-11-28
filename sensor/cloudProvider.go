@@ -23,25 +23,33 @@ func SenseCloudProviderInfo() (*CloudProviderInfo, error) {
 }
 
 // hasMetaDataAPIAccess - checks if there is an access to cloud provider meta data
+var MetaDataAPIRequests = []struct {
+	url     string
+	headers map[string]string
+} 	{
+	{
+		"http://169.254.169.254/computeMetadata/v1/?alt=json&recursive=true",
+		map[string]string{"Metadata-Flavor": "Google"},
+	},
+	{
+		"http://169.254.169.254/metadata/instance?api-version=2021-02-01",
+		map[string]string{"Metadata": "true"},
+	},
+	{
+		"http://169.254.169.254/latest/meta-data/local-hostname",
+		map[string]string{},
+	},
+}
+
 func hasMetaDataAPIAccess() bool {
 	client := &http.Client{}
 
-	res, err := httputils.HttpGet(client, "http://169.254.169.254/computeMetadata/v1/?alt=json&recursive=true", map[string]string{"Metadata-Flavor": "Google"})
+	for _,req := range MetaDataAPIRequests {
+		res, err := httputils.HttpGet(client, req.url, req.headers)
 
-	if err == nil && res.StatusCode == 200 {
-		return true
-	}
-
-	res, err = httputils.HttpGet(client, "http://169.254.169.254/metadata/instance?api-version=2021-02-01", map[string]string{"Metadata": "true"})
-
-	if err == nil && res.StatusCode == 200 {
-		return true
-	}
-
-	res, err = httputils.HttpGet(client, "http://169.254.169.254/latest/meta-data/local-hostname", nil)
-
-	if err == nil && res.StatusCode == 200 {
-		return true
+		if err == nil && res.StatusCode == 200 {
+			return true
+		}	
 	}
 
 	return false
