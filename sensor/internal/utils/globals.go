@@ -13,14 +13,14 @@ var (
 	// global http.client instance to reduce object resource overuse.
 	httpClient *http.Client
 
-	lock = &sync.Mutex{}
+	httpClientCreationlock = &sync.Mutex{}
 )
 
 // GetHttpClient - instantiate http.client object
 func GetHttpClient() *http.Client {
 	if httpClient == nil {
-		lock.Lock()
-		defer lock.Unlock()
+		httpClientCreationlock.Lock()
+		defer httpClientCreationlock.Unlock()
 		if httpClient == nil {
 			httpClient = &http.Client{}
 		}
