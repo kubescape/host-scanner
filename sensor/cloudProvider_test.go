@@ -15,10 +15,7 @@ func Test_hasMetaDataAPIAccess(t *testing.T) {
 	httpmock.RegisterResponder("GET", "http://www.mygoodurl.com",
 		httpmock.NewStringResponder(200, `[{"id": 1, "name": "My Good URL"}]`))
 
-	MetaDataAPIRequests = []struct {
-		url     string
-		headers map[string]string
-	}{
+	CloudProviderMetaDataAPIs = []APIsURLs{
 		{
 			"http://www.mygoodurl.com",
 			map[string]string{},
@@ -34,10 +31,7 @@ func Test_hasMetaDataAPIAccess(t *testing.T) {
 		assert.Equal(t, true, res)
 	})
 
-	MetaDataAPIRequests = []struct {
-		url     string
-		headers map[string]string
-	}{
+	CloudProviderMetaDataAPIs = []APIsURLs{
 		{
 			"http://10.20.30.100",
 			map[string]string{},
