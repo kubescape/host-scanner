@@ -47,6 +47,12 @@ func initHTTPHandlers() {
 	http.HandleFunc("/kubeletInfo", kubeletInfoHandler)
 	http.HandleFunc("/kubeProxyInfo", kubeProxyHandler)
 	http.HandleFunc("/controlPlaneInfo", controlPlaneHandler)
+	http.HandleFunc("/cloudProviderInfo", cloudProviderHandler)
+}
+
+func cloudProviderHandler(rw http.ResponseWriter, r *http.Request) {
+	resp, err := sensor.SenseCloudProviderInfo()
+	GenericSensorHandler(rw, r, resp, err, "SenseCloudProviderInfo")
 }
 
 func controlPlaneHandler(rw http.ResponseWriter, r *http.Request) {
