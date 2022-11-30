@@ -10,6 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var BuildVersion string
+
 func initHTTPHandlers() {
 	// TODO: implement probe endpoint
 	http.HandleFunc("/kubeletConfigurations", func(rw http.ResponseWriter, r *http.Request) {
@@ -48,6 +50,16 @@ func initHTTPHandlers() {
 	http.HandleFunc("/kubeProxyInfo", kubeProxyHandler)
 	http.HandleFunc("/controlPlaneInfo", controlPlaneHandler)
 	http.HandleFunc("/cloudProviderInfo", cloudProviderHandler)
+	http.HandleFunc("/version", versionHandler)
+}
+
+func versionHandler(rw http.ResponseWriter, r *http.Request) {
+	var err error
+	if BuildVersion == "" {
+		err = fmt.Errorf("BuildVersion is empty")
+	}
+	resp := BuildVersion
+	GenericSensorHandler(rw, r, resp, err, "versionHandler")
 }
 
 func cloudProviderHandler(rw http.ResponseWriter, r *http.Request) {

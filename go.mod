@@ -7,6 +7,7 @@ require (
 	github.com/codegangsta/negroni v1.0.0
 	github.com/coreos/go-systemd/v22 v22.4.0
 	github.com/godbus/dbus/v5 v5.1.0
+	github.com/jarcoal/httpmock v1.2.0
 	github.com/weaveworks/procspy v0.0.0-20150706124340-cb970aa190c3
 	go.uber.org/zap v1.19.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -15,7 +16,6 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/jarcoal/httpmock v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 )
 
