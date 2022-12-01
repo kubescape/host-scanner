@@ -56,10 +56,11 @@ func initHTTPHandlers() {
 func versionHandler(rw http.ResponseWriter, r *http.Request) {
 	var err error
 	if BuildVersion == "" {
-		err = fmt.Errorf("BuildVersion is empty")
+		err = fmt.Errorf("Host scanner BuildVersion is empty")
+		BuildVersion = "unknown"
 	}
 	resp := BuildVersion
-	GenericSensorHandler(rw, r, resp, err, "versionHandler")
+	GenericSensorHandler(rw, r, resp, err, "VersionHandler")
 }
 
 func cloudProviderHandler(rw http.ResponseWriter, r *http.Request) {

@@ -121,10 +121,7 @@ func filterNLogHTTPErrors(rw http.ResponseWriter, r *http.Request, next http.Han
 // main
 func main() {
 	fmt.Println("Starting Kubescape cluster node host scanner service")
-	if BuildVersion == "" {
-		BuildVersion = "unknown"
-	}
-	fmt.Println("Build version: " + BuildVersion)
+	fmt.Println("Host scanner service build version: " + BuildVersion)
 	baseLogger := initLogger()
 	negroniRouter := initHTTPRouter()
 
