@@ -151,7 +151,7 @@ func SenseKubeletConfigurations() ([]byte, error) {
 	}
 	kubeletConfFileLocation, ok := kubeletProcess.GetArg(kubeletConfigArgName)
 	if !ok || kubeletConfFileLocation == "" {
-		return nil, fmt.Errorf("in SenseKubeletConfigurations failed to find kubelet config File location")
+		return nil, fmt.Errorf("in SenseKubeletConfigurations failed to find kubelet config File location: %v", kubeletProcess)
 	}
 
 	zap.L().Debug("config loaction", zap.String("kubeletConfFileLocation", kubeletConfFileLocation))
