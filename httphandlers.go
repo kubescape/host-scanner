@@ -51,12 +51,19 @@ func initHTTPHandlers() {
 	http.HandleFunc("/controlPlaneInfo", controlPlaneHandler)
 	http.HandleFunc("/cloudProviderInfo", cloudProviderHandler)
 	http.HandleFunc("/version", versionHandler)
+	http.HandleFunc("/CNIInfo", CNIHandler)
+
+}
+
+func CNIHandler(rw http.ResponseWriter, r *http.Request) {
+	resp, err := sensor.SenseCNIInfo()
+	GenericSensorHandler(rw, r, resp, err, "SenseCNIInfo")
 }
 
 func versionHandler(rw http.ResponseWriter, r *http.Request) {
 	var err error
 	if BuildVersion == "" {
-		err = fmt.Errorf("Host scanner BuildVersion is empty")
+		err = fmt.Errorf("host scanner BuildVersion is empty")
 		BuildVersion = "unknown"
 	}
 	resp := BuildVersion
