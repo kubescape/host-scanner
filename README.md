@@ -158,7 +158,8 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >```
 >docker login
 >```
->
+>Create a new repository in dockerhub and mark it as private
+
 >***Build and Push image to docker hub***
 >
 >
