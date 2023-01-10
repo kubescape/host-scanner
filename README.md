@@ -163,14 +163,14 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >***Build and Push image to docker hub***
 >
 >
->"myImageName" should be the exact name of the image repository name in dockerhub
+>"myRepoName" should be the exact name of the image repository name in dockerhub
 >```
->docker build -f build/Dockerfile . -t <myImageName>:<MyImageTag>
+>docker build -f build/Dockerfile . -t <myRepoName>:<MyImageTag>
 >```
 >
 >Push image to a remote repository (dockerhub in our case)
 >```
->docker push <imageTag>:<imageVersion>
+>docker push <myRepoName>:<MyImageTag>
 >
 >```
 >
