@@ -245,7 +245,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >      hostPID: true
 >      hostIPC: true
 >```
-### Apply and Test
+### 3. Apply and Test
 
 
 Create host-scanner pod
