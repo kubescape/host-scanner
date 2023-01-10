@@ -61,7 +61,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >docker build -f build/Dockerfile . -t <myImageName>:<MyImageTag>
 >```
 >
->Configure [k8s-deployment.yaml](deployment/k8s-deployment.yaml) with new image and imagePullPolicy: Never. example:
+>Configure [k8s-deployment.yaml](https://github.com/kubescape/host-scanner/blob/master/deployment/k8s-deployment.yaml) with new image and imagePullPolicy: Never. example:
 >
 >```yaml
 >apiVersion: v1
