@@ -27,7 +27,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 
 
 
-## Usage - Setup, Build and Test
+## Local usage - Setup, Build and Test
 
 ### 1. Prerequisites
 
