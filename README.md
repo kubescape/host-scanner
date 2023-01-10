@@ -213,7 +213,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >        effect: NoSchedule
 >      containers:
 >      - name: host-sensor
->        image: myImageName:MyImageTag
+>        image: myRepoName:MyImageTag
 >        securityContext:
 >          privileged: true
 >          readOnlyRootFilesystem: true
