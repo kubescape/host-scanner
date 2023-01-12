@@ -27,7 +27,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 
 
 
-## Usage - Setup, Build and Test
+## Local usage - Setup, Build and Test
 
 ### 1. Prerequisites
 
@@ -61,7 +61,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >docker build -f build/Dockerfile . -t <myImageName>:<MyImageTag>
 >```
 >
->Configure [k8s-deployment.yaml](deployment/k8s-deployment.yaml) with new image and imagePullPolicy: Never. example:
+>Configure [k8s-deployment.yaml](https://github.com/kubescape/host-scanner/blob/master/deployment/k8s-deployment.yaml) with new image and imagePullPolicy: Never. example:
 >
 >```yaml
 >apiVersion: v1
@@ -158,18 +158,19 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >```
 >docker login
 >```
->
+>Create a new repository in dockerhub and mark it as private
+
 >***Build and Push image to docker hub***
 >
 >
->"myImageName" should be the exact name of the image repository name in dockerhub
+>"myRepoName" should be the exact name of the image repository name in dockerhub
 >```
->docker build -f build/Dockerfile . -t <myImageName>:<MyImageTag>
+>docker build -f build/Dockerfile . -t <myRepoName>:<MyImageTag>
 >```
 >
 >Push image to a remote repository (dockerhub in our case)
 >```
->docker push <imageTag>:<imageVersion>
+>docker push <myRepoName>:<MyImageTag>
 >
 >```
 >
@@ -212,7 +213,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >        effect: NoSchedule
 >      containers:
 >      - name: host-sensor
->        image: myImageName:MyImageTag
+>        image: myRepoName:MyImageTag
 >        securityContext:
 >          privileged: true
 >          readOnlyRootFilesystem: true
@@ -245,7 +246,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >      hostPID: true
 >      hostIPC: true
 >```
-### Apply and Test
+### 3. Apply and Test
 
 
 Create host-scanner pod
