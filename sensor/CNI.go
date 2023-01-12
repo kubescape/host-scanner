@@ -14,7 +14,7 @@ type CNIInfo struct {
 	CNIConfigFiles []*ds.FileInfo `json:"CNIConfigFiles,omitempty"`
 
 	// The name of the running CNI
-	CNIName string `json:"CNIName,omitempty"`
+	CNINames []string `json:"CNINames,omitempty"`
 }
 
 // SenseCNIInfo return `CNIInfo`
@@ -32,7 +32,7 @@ func SenseCNIInfo() (*CNIInfo, error) {
 	}
 
 	// get CNI name
-	ret.CNIName = getCNIName()
+	ret.CNINames = getCNINames()
 
 	return &ret, nil
 }
@@ -67,7 +67,8 @@ func makeCNIConfigFilesInfo() ([]*ds.FileInfo, error) {
 }
 
 // getCNIName - looking for CNI process and return CNI name, or empty if not found.
-func getCNIName() string {
+func getCNINames() []string {
+	var CNIs []string
 	supportedCNIs := []struct {
 		name          string
 		processSuffix string
@@ -86,7 +87,7 @@ func getCNIName() string {
 
 		if p != nil {
 			zap.L().Debug("CNI process found", zap.String("name", cni.name))
-			return cni.name
+			CNIs = append(CNIs, cni.name)
 		}
 
 		if err != nil {
@@ -99,5 +100,5 @@ func getCNIName() string {
 
 	zap.L().Debug("No supported CNI process was found")
 
-	return ""
+	return CNIs
 }
