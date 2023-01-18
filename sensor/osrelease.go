@@ -6,9 +6,10 @@ import (
 	"path"
 	"strings"
 
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 	ds "github.com/kubescape/host-scanner/sensor/datastructures"
 	"github.com/kubescape/host-scanner/sensor/internal/utils"
-	"go.uber.org/zap"
 )
 
 const (
@@ -37,7 +38,7 @@ func getOsReleaseFile() (string, error) {
 	for etcSons, err = etcDir.Readdirnames(100); err == nil; etcSons, err = etcDir.Readdirnames(100) {
 		for idx := range etcSons {
 			if strings.HasSuffix(etcSons[idx], osReleaseFileSuffix) {
-				zap.L().Debug("os release file found", zap.String("filename", etcSons[idx]))
+				logger.L().Debug("os release file found", helpers.String("filename", etcSons[idx]))
 				return etcSons[idx], nil
 			}
 		}

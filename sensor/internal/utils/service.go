@@ -8,7 +8,8 @@ import (
 
 	systemd_debus "github.com/coreos/go-systemd/v22/dbus"
 	"github.com/godbus/dbus/v5"
-	"go.uber.org/zap"
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 // This file contains utilities for the getting information about services
@@ -46,7 +47,7 @@ func GetKubeletServiceFiles(kubeletPid int) ([]string, error) {
 	// First try to get the service files from systemd daemon
 	configDir, err := GetServiceFilesByPIDSystemd(kubeletPid)
 	if err != nil {
-		zap.L().Debug("failed to get service files by PID from systemd", zap.Error(err))
+		logger.L().Debug("failed to get service files by PID from systemd", helpers.Error(err))
 	}
 
 	// Fallback to the default location

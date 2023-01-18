@@ -1,10 +1,11 @@
 package sensor
 
 import (
+	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 	ds "github.com/kubescape/host-scanner/sensor/datastructures"
 	"github.com/kubescape/host-scanner/sensor/internal/utils"
 )
@@ -18,56 +19,56 @@ type CNIInfo struct {
 }
 
 // SenseCNIInfo return `CNIInfo`
-func SenseCNIInfo() (*CNIInfo, error) {
+func SenseCNIInfo(ctx context.Context) (*CNIInfo, error) {
 	var err error
 	ret := CNIInfo{}
 
 	// make cni config files
-	CNIConfigInfo, err := makeCNIConfigFilesInfo()
+	CNIConfigInfo, err := makeCNIConfigFilesInfo(ctx)
 
 	if err != nil {
-		zap.L().Error("SenseCNIInfo", zap.Error(err))
+		logger.L().Ctx(ctx).Error("SenseCNIInfo", helpers.Error(err))
 	} else {
 		ret.CNIConfigFiles = CNIConfigInfo
 	}
 
 	// get CNI name
-	ret.CNINames = getCNINames()
+	ret.CNINames = getCNINames(ctx)
 
 	return &ret, nil
 }
 
 // makeCNIConfigFilesInfo - returns a list of FileInfos of cni config files.
-func makeCNIConfigFilesInfo() ([]*ds.FileInfo, error) {
+func makeCNIConfigFilesInfo(ctx context.Context) ([]*ds.FileInfo, error) {
 	// *** Start handling CNI Files
 	kubeletProc, err := LocateKubeletProcess()
 	if err != nil {
 		return nil, err
 	}
 
-	CNIConfigDir := utils.GetCNIConfigPath(kubeletProc)
+	CNIConfigDir := utils.GetCNIConfigPath(ctx, kubeletProc)
 
 	if CNIConfigDir == "" {
 		return nil, fmt.Errorf("no CNI Config dir found in getCNIConfigPath")
 	}
 
 	//Getting CNI config files
-	CNIConfigInfo, err := makeHostDirFilesInfoVerbose(CNIConfigDir, true, nil, 0)
+	CNIConfigInfo, err := makeHostDirFilesInfoVerbose(ctx, CNIConfigDir, true, nil, 0)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to makeHostDirFilesInfo for CNIConfigDir %s: %w", CNIConfigDir, err)
 	}
 
 	if len(CNIConfigInfo) == 0 {
-		zap.L().Debug("SenseCNIInfo - no cni config files were found.",
-			zap.String("path", CNIConfigDir))
+		logger.L().Debug("SenseCNIInfo - no cni config files were found.",
+			helpers.String("path", CNIConfigDir))
 	}
 
 	return CNIConfigInfo, nil
 }
 
 // getCNIName - looking for CNI process and return CNI name, or empty if not found.
-func getCNINames() []string {
+func getCNINames(ctx context.Context) []string {
 	var CNIs []string
 	supportedCNIs := []struct {
 		name          string
@@ -86,19 +87,19 @@ func getCNINames() []string {
 		p, err := utils.LocateProcessByExecSuffix(cni.processSuffix)
 
 		if p != nil {
-			zap.L().Debug("CNI process found", zap.String("name", cni.name))
+			logger.L().Debug("CNI process found", helpers.String("name", cni.name))
 			CNIs = append(CNIs, cni.name)
 		}
 
 		if err != nil {
-			zap.L().Error("getCNIName- Failed to locate process for cni",
-				zap.String("cni name", cni.name),
-				zap.Error(err))
+			logger.L().Ctx(ctx).Error("getCNIName- Failed to locate process for cni",
+				helpers.String("cni name", cni.name),
+				helpers.Error(err))
 		}
 
 	}
 
-	zap.L().Debug("No supported CNI process was found")
+	logger.L().Debug("No supported CNI process was found")
 
 	return CNIs
 }

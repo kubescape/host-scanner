@@ -1,11 +1,12 @@
 package sensor
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/kubescape/go-logger/helpers"
 	ds "github.com/kubescape/host-scanner/sensor/datastructures"
 	"github.com/kubescape/host-scanner/sensor/internal/utils"
-	"go.uber.org/zap"
 )
 
 const (
@@ -22,7 +23,7 @@ type KubeProxyInfo struct {
 }
 
 // SenseKubeProxyInfo return `KubeProxyInfo`
-func SenseKubeProxyInfo() (*KubeProxyInfo, error) {
+func SenseKubeProxyInfo(ctx context.Context) (*KubeProxyInfo, error) {
 	ret := KubeProxyInfo{}
 
 	// Get process
@@ -34,8 +35,8 @@ func SenseKubeProxyInfo() (*KubeProxyInfo, error) {
 	// kubeconfig
 	kubeConfigPath, ok := proc.GetArg(kubeConfigArgName)
 	if ok {
-		ret.KubeConfigFile = makeContaineredFileInfoVerbose(proc, kubeConfigPath, false,
-			zap.String("in", "SenseKubeProxyInfo"),
+		ret.KubeConfigFile = makeContaineredFileInfoVerbose(ctx, proc, kubeConfigPath, false,
+			helpers.String("in", "SenseKubeProxyInfo"),
 		)
 	}
 

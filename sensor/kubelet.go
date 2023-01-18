@@ -1,11 +1,13 @@
 package sensor
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 	ds "github.com/kubescape/host-scanner/sensor/datastructures"
 	"github.com/kubescape/host-scanner/sensor/internal/utils"
-	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 )
 
@@ -51,20 +53,20 @@ func LocateKubeletProcess() (*utils.ProcessDetails, error) {
 
 func ReadKubeletConfig(kubeletConfArgs string) ([]byte, error) {
 	conte, err := utils.ReadFileOnHostFileSystem(kubeletConfArgs)
-	zap.L().Debug("raw content", zap.ByteString("cont", conte))
+	logger.L().Debug("raw content", helpers.String("cont", string(conte)))
 	return conte, err
 }
 
-func makeKubeletServiceFilesInfo(pid int) []ds.FileInfo {
+func makeKubeletServiceFilesInfo(ctx context.Context, pid int) []ds.FileInfo {
 	files, err := utils.GetKubeletServiceFiles(pid)
 	if err != nil {
-		zap.L().Warn("failed to getKubeletServiceFiles", zap.Error(err))
+		logger.L().Ctx(ctx).Warning("failed to getKubeletServiceFiles", helpers.Error(err))
 		return nil
 	}
 
 	serviceFiles := []ds.FileInfo{}
 	for _, file := range files {
-		info := makeHostFileInfoVerbose(file, false, zap.String("in", "makeProcessInfoVerbose"))
+		info := makeHostFileInfoVerbose(ctx, file, false, helpers.String("in", "makeProcessInfoVerbose"))
 		if info != nil {
 			serviceFiles = append(serviceFiles, *info)
 		}
@@ -78,7 +80,7 @@ func makeKubeletServiceFilesInfo(pid int) []ds.FileInfo {
 }
 
 // SenseKubeletInfo return varius information about the kubelet service
-func SenseKubeletInfo() (*KubeletInfo, error) {
+func SenseKubeletInfo(ctx context.Context) (*KubeletInfo, error) {
 	ret := KubeletInfo{}
 
 	kubeletProcess, err := LocateKubeletProcess()
@@ -87,42 +89,42 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	}
 
 	// Serivce files
-	ret.ServiceFiles = makeKubeletServiceFilesInfo(int(kubeletProcess.PID))
+	ret.ServiceFiles = makeKubeletServiceFilesInfo(ctx, int(kubeletProcess.PID))
 
 	pConfigPath, ok := kubeletProcess.GetArg(kubeletConfigArgName)
 	if ok {
-		ret.ConfigFile = makeContaineredFileInfoVerbose(kubeletProcess, pConfigPath, true,
-			zap.String("in", "SenseKubeletInfo"),
+		ret.ConfigFile = makeContaineredFileInfoVerbose(ctx, kubeletProcess, pConfigPath, true,
+			helpers.String("in", "SenseKubeletInfo"),
 		)
 	} else {
-		ret.ConfigFile = makeContaineredFileInfoFromListVerbose(kubeletProcess, kubeletConfigDefaultPathList, true,
-			zap.String("in", "SenseKubeletInfo"),
+		ret.ConfigFile = makeContaineredFileInfoFromListVerbose(ctx, kubeletProcess, kubeletConfigDefaultPathList, true,
+			helpers.String("in", "SenseKubeletInfo"),
 		)
 	}
 
 	pKubeConfigPath, ok := kubeletProcess.GetArg(kubeConfigArgName)
 	if ok {
-		ret.KubeConfigFile = makeContaineredFileInfoVerbose(kubeletProcess, pKubeConfigPath, true,
-			zap.String("in", "SenseKubeletInfo"),
+		ret.KubeConfigFile = makeContaineredFileInfoVerbose(ctx, kubeletProcess, pKubeConfigPath, true,
+			helpers.String("in", "SenseKubeletInfo"),
 		)
 	} else {
-		ret.KubeConfigFile = makeContaineredFileInfoFromListVerbose(kubeletProcess, kubeletKubeConfigDefaultPathList, true,
-			zap.String("in", "SenseKubeletInfo"),
+		ret.KubeConfigFile = makeContaineredFileInfoFromListVerbose(ctx, kubeletProcess, kubeletKubeConfigDefaultPathList, true,
+			helpers.String("in", "SenseKubeletInfo"),
 		)
 	}
 
 	// Kubelet client ca certificate
 	caFilePath, ok := kubeletProcess.GetArg(kubeletClientCAArgName)
 	if !ok && ret.ConfigFile != nil && ret.ConfigFile.Content != nil {
-		zap.L().Debug("extracting kubelet client ca certificate from config")
+		logger.L().Debug("extracting kubelet client ca certificate from config")
 		extracted, err := kubeletExtractCAFileFromConf(ret.ConfigFile.Content)
 		if err == nil {
 			caFilePath = extracted
 		}
 	}
 	if caFilePath != "" {
-		ret.ClientCAFile = makeContaineredFileInfoVerbose(kubeletProcess, caFilePath, false,
-			zap.String("in", "SenseKubeletInfo"),
+		ret.ClientCAFile = makeContaineredFileInfoVerbose(ctx, kubeletProcess, caFilePath, false,
+			helpers.String("in", "SenseKubeletInfo"),
 		)
 	}
 
@@ -162,6 +164,6 @@ func SenseKubeletConfigurations() ([]byte, error) {
 		return nil, fmt.Errorf("in SenseKubeletConfigurations failed to find kubelet config File location: %v", kubeletProcess)
 	}
 
-	zap.L().Debug("config loaction", zap.String("kubeletConfFileLocation", kubeletConfFileLocation))
+	logger.L().Debug("config loaction", helpers.String("kubeletConfFileLocation", kubeletConfFileLocation))
 	return ReadKubeletConfig(kubeletProcess.ContaineredPath(kubeletConfFileLocation))
 }

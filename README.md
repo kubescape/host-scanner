@@ -3,7 +3,7 @@
 This component is a data acquisition component in the Kubescape project. Its goal is to collect information about the Kubernetes node host for further security posture evaluation in Kubescape.
 
 ## Deployment
-Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It publishes an API for clients to read host infromation.
+Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It publishes an API for clients to read host information.
 
 ## Supported APIs
 
@@ -72,7 +72,7 @@ kubectl curl "http://<PODNAME>:7888/version" -n <NAMESPACE>
 * for minikube:
   * [install minikube](https://minikube.sigs.k8s.io/docs/start/)
 * for cloud providers:
-  * Access to a remote private respository such as dockerhub.
+  * Access to a remote private repository such as dockerhub.
   * Access to a cloud provider running cluster.
 
 

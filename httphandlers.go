@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 	"github.com/kubescape/host-scanner/sensor"
-	"go.uber.org/zap"
 )
 
 var BuildVersion string
@@ -22,7 +23,7 @@ func initHTTPHandlers() {
 		} else {
 			rw.WriteHeader(http.StatusOK)
 			if _, err := rw.Write(conf); err != nil {
-				zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
+				logger.L().Ctx(r.Context()).Error("In kubeletConfigurations handler failed to write", helpers.Error(err))
 			}
 		}
 	})
@@ -37,7 +38,7 @@ func initHTTPHandlers() {
 		cmdLine := strings.Join(proc.CmdLine, " ")
 		rw.WriteHeader(http.StatusOK)
 		if _, err := rw.Write([]byte(cmdLine)); err != nil {
-			zap.L().Error("In kubeletConfigurations handler failed to write", zap.Error(err))
+			logger.L().Ctx(r.Context()).Error("In kubeletConfigurations handler failed to write", helpers.Error(err))
 		}
 
 	})
@@ -56,7 +57,7 @@ func initHTTPHandlers() {
 }
 
 func CNIHandler(rw http.ResponseWriter, r *http.Request) {
-	resp, err := sensor.SenseCNIInfo()
+	resp, err := sensor.SenseCNIInfo(r.Context())
 	GenericSensorHandler(rw, r, resp, err, "SenseCNIInfo")
 }
 
@@ -76,27 +77,27 @@ func cloudProviderHandler(rw http.ResponseWriter, r *http.Request) {
 }
 
 func controlPlaneHandler(rw http.ResponseWriter, r *http.Request) {
-	resp, err := sensor.SenseControlPlaneInfo()
+	resp, err := sensor.SenseControlPlaneInfo(r.Context())
 	GenericSensorHandler(rw, r, resp, err, "SenseControlPlaneInfo")
 }
 
 func kubeProxyHandler(rw http.ResponseWriter, r *http.Request) {
-	resp, err := sensor.SenseKubeProxyInfo()
+	resp, err := sensor.SenseKubeProxyInfo(r.Context())
 	GenericSensorHandler(rw, r, resp, err, "SenseKubeProxyInfo")
 }
 
 func kubeletInfoHandler(rw http.ResponseWriter, r *http.Request) {
-	resp, err := sensor.SenseKubeletInfo()
+	resp, err := sensor.SenseKubeletInfo(r.Context())
 	GenericSensorHandler(rw, r, resp, err, "SenseKubeletInfo")
 }
 
 func LinuxKernelVariablesHandler(rw http.ResponseWriter, r *http.Request) {
-	resp, err := sensor.SenseKernelVariables()
+	resp, err := sensor.SenseKernelVariables(r.Context())
 	GenericSensorHandler(rw, r, resp, err, "SenseKernelVariables")
 }
 
 func openedPortsHandler(rw http.ResponseWriter, r *http.Request) {
-	resp, err := sensor.SenseOpenPorts()
+	resp, err := sensor.SenseOpenPorts(r.Context())
 	GenericSensorHandler(rw, r, resp, err, "SenseOpenPorts")
 }
 
@@ -107,7 +108,7 @@ func osReleaseHandler(rw http.ResponseWriter, r *http.Request) {
 	} else {
 		rw.WriteHeader(http.StatusOK)
 		if _, err := rw.Write(fileContent); err != nil {
-			zap.L().Error("In SenseOsRelease handler failed to write", zap.Error(err))
+			logger.L().Ctx(r.Context()).Error("In SenseOsRelease handler failed to write", helpers.Error(err))
 		}
 	}
 }
@@ -119,7 +120,7 @@ func kernelVersionHandler(rw http.ResponseWriter, r *http.Request) {
 	} else {
 		rw.WriteHeader(http.StatusOK)
 		if _, err := rw.Write(fileContent); err != nil {
-			zap.L().Error("In kernelVersionHandler handler failed to write", zap.Error(err))
+			logger.L().Ctx(r.Context()).Error("In kernelVersionHandler handler failed to write", helpers.Error(err))
 		}
 	}
 }
@@ -136,7 +137,7 @@ func GenericSensorHandler(w http.ResponseWriter, r *http.Request, respContent in
 	if err == nil {
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(respContent); err != nil {
-			zap.L().Error(fmt.Sprintf("In %s handler failed to write", senseName), zap.Error(err))
+			logger.L().Ctx(r.Context()).Error(fmt.Sprintf("In %s handler failed to write", senseName), helpers.Error(err))
 		}
 		return
 	}
@@ -150,6 +151,6 @@ func GenericSensorHandler(w http.ResponseWriter, r *http.Request, respContent in
 
 	w.WriteHeader(senseErr.Code)
 	if err := json.NewEncoder(w).Encode(senseErr); err != nil {
-		zap.L().Error(fmt.Sprintf("In %s handler failed to write", senseName), zap.Error(err))
+		logger.L().Ctx(r.Context()).Error(fmt.Sprintf("In %s handler failed to write", senseName), helpers.Error(err))
 	}
 }

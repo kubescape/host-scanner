@@ -1,13 +1,14 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path"
 	"syscall"
 
-	"go.uber.org/zap"
-
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 	ds "github.com/kubescape/host-scanner/sensor/datastructures"
 )
 
@@ -17,7 +18,7 @@ var (
 
 // ReadFileOnHostFileSystem reads a file on the host file system.
 func ReadFileOnHostFileSystem(fileName string) ([]byte, error) {
-	zap.L().Debug("reading file on host file system", zap.String("path", HostPath(fileName)))
+	logger.L().Debug("reading file on host file system", helpers.String("path", HostPath(fileName)))
 	return os.ReadFile(HostPath(fileName))
 }
 
@@ -71,7 +72,7 @@ func IsPathExists(filename string) bool {
 func MakeFileInfo(filePath string, readContent bool) (*ds.FileInfo, error) {
 	ret := ds.FileInfo{Path: filePath}
 
-	zap.L().Debug("making file info", zap.String("path", filePath))
+	logger.L().Debug("making file info", helpers.String("path", filePath))
 
 	// Permissions
 	perms, err := GetFilePermissions(filePath)
@@ -101,7 +102,7 @@ func MakeFileInfo(filePath string, readContent bool) (*ds.FileInfo, error) {
 
 // MakeChangedRootFileInfo makes a file info object
 // for the given path on the given root directory.
-func MakeChangedRootFileInfo(rootDir string, filePath string, readContent bool) (*ds.FileInfo, error) {
+func MakeChangedRootFileInfo(ctx context.Context, rootDir string, filePath string, readContent bool) (*ds.FileInfo, error) {
 	fullPath := path.Join(rootDir, filePath)
 	obj, err := MakeFileInfo(fullPath, readContent)
 
@@ -117,7 +118,7 @@ func MakeChangedRootFileInfo(rootDir string, filePath string, readContent bool) 
 	obj.Ownership.Username = username
 
 	if err != nil {
-		zap.L().Error("MakeHostFileInfo", zap.Error(err))
+		logger.L().Ctx(ctx).Error("MakeHostFileInfo", helpers.Error(err))
 	}
 
 	// Groupname
@@ -125,7 +126,7 @@ func MakeChangedRootFileInfo(rootDir string, filePath string, readContent bool) 
 	obj.Ownership.Groupname = groupname
 
 	if err != nil {
-		zap.L().Error("MakeHostFileInfo", zap.Error(err))
+		logger.L().Ctx(ctx).Error("MakeHostFileInfo", helpers.Error(err))
 	}
 
 	return obj, nil
@@ -133,12 +134,12 @@ func MakeChangedRootFileInfo(rootDir string, filePath string, readContent bool) 
 
 // MakeContaineredFileInfo makes a file info object
 // for a given process file system view.
-func MakeContaineredFileInfo(p *ProcessDetails, filePath string, readContent bool) (*ds.FileInfo, error) {
-	return MakeChangedRootFileInfo(p.RootDir(), filePath, readContent)
+func MakeContaineredFileInfo(ctx context.Context, p *ProcessDetails, filePath string, readContent bool) (*ds.FileInfo, error) {
+	return MakeChangedRootFileInfo(ctx, p.RootDir(), filePath, readContent)
 }
 
 // MakeHostFileInfo makes a file info object
 // for the given path on the host file system.
-func makeHostFileInfo(filePath string, readContent bool) (*ds.FileInfo, error) {
-	return MakeChangedRootFileInfo(HostFileSystemDefaultLocation, filePath, readContent)
+func makeHostFileInfo(ctx context.Context, filePath string, readContent bool) (*ds.FileInfo, error) {
+	return MakeChangedRootFileInfo(ctx, HostFileSystemDefaultLocation, filePath, readContent)
 }
