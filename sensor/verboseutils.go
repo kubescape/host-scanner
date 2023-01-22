@@ -24,6 +24,21 @@ func makeHostFileInfoVerbose(path string, readContent bool, failMsgs ...zap.Fiel
 	return makeChangedRootFileInfoVerbose(utils.HostFileSystemDefaultLocation, path, readContent, failMsgs...)
 }
 
+// makeContaineredFileInfoFromListVerbose makes a file info object
+// for a given process file system view, and with error logging.
+// It tries to find the file in the given list of paths, by the order of the list.
+// It returns nil on error.
+func makeContaineredFileInfoFromListVerbose(p *utils.ProcessDetails, filePathList []string, readContent bool, failMsgs ...zap.Field) *ds.FileInfo {
+
+	for _, filePath := range filePathList {
+		fileInfo := makeChangedRootFileInfoVerbose(p.RootDir(), filePath, readContent, failMsgs...)
+		if fileInfo != nil {
+			return fileInfo
+		}
+	}
+	return nil
+}
+
 // makeContaineredFileInfoVerbose makes a file info object
 // for a given process file system view, and with error logging.
 // It returns nil on error.

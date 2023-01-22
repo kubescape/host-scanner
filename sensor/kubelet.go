@@ -14,11 +14,17 @@ const (
 	kubeletProcessSuffix   = "/kubelet"
 	kubeletConfigArgName   = "--config"
 	kubeletClientCAArgName = "--client-ca-file"
-
-	// Default paths
-	kubeletConfigDefaultPath     = "/var/lib/kubelet/config.yaml"
-	kubeletKubeConfigDefaultPath = "/etc/kubernetes/kubelet.conf"
 )
+
+// default paths
+var kubeletConfigDefaultPathList = []string{
+	"/var/lib/kubelet/config.yaml",                // default kubelet config file path
+	"/etc/kubernetes/kubelet/kubelet-config.json", // default EKS config file path
+}
+var kubeletKubeConfigDefaultPathList = []string{
+	"/etc/kubernetes/kubelet.conf", // default kubelet kube config file path
+	"/var/lib/kubelet/kubeconfig",  // default EKS kubeconfig file path
+}
 
 // KubeletInfo holds information about kubelet
 type KubeletInfo struct {
@@ -83,25 +89,27 @@ func SenseKubeletInfo() (*KubeletInfo, error) {
 	// Serivce files
 	ret.ServiceFiles = makeKubeletServiceFilesInfo(int(kubeletProcess.PID))
 
-	// Kubelet config
-	configPath := kubeletConfigDefaultPath
-	p, ok := kubeletProcess.GetArg(kubeletConfigArgName)
+	pConfigPath, ok := kubeletProcess.GetArg(kubeletConfigArgName)
 	if ok {
-		configPath = p
+		ret.ConfigFile = makeContaineredFileInfoVerbose(kubeletProcess, pConfigPath, true,
+			zap.String("in", "SenseKubeletInfo"),
+		)
+	} else {
+		ret.ConfigFile = makeContaineredFileInfoFromListVerbose(kubeletProcess, kubeletConfigDefaultPathList, true,
+			zap.String("in", "SenseKubeletInfo"),
+		)
 	}
-	ret.ConfigFile = makeContaineredFileInfoVerbose(kubeletProcess, configPath, true,
-		zap.String("in", "SenseKubeletInfo"),
-	)
 
-	// Kubelet kubeconfig
-	kubeConfigPath := kubeletConfigDefaultPath
-	p, ok = kubeletProcess.GetArg(kubeConfigArgName)
+	pKubeConfigPath, ok := kubeletProcess.GetArg(kubeConfigArgName)
 	if ok {
-		kubeConfigPath = p
+		ret.KubeConfigFile = makeContaineredFileInfoVerbose(kubeletProcess, pKubeConfigPath, true,
+			zap.String("in", "SenseKubeletInfo"),
+		)
+	} else {
+		ret.KubeConfigFile = makeContaineredFileInfoFromListVerbose(kubeletProcess, kubeletKubeConfigDefaultPathList, true,
+			zap.String("in", "SenseKubeletInfo"),
+		)
 	}
-	ret.KubeConfigFile = makeContaineredFileInfoVerbose(kubeletProcess, kubeConfigPath, false,
-		zap.String("in", "SenseKubeletInfo"),
-	)
 
 	// Kubelet client ca certificate
 	caFilePath, ok := kubeletProcess.GetArg(kubeletClientCAArgName)
