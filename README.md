@@ -8,22 +8,57 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 ## Supported APIs
 
 **ControlPlaneInfo** - returns ControlPlane related information. Returns 404 if no information exist (=the node is not a control plane). [example](README.md#controlplaneinfo)
+```
+kubectl curl "http://<PODNAME>:7888/ControlPlaneInfo" -n <NAMESPACE>
 
+```
 **CNIInfo** - returns container network interface information. [example](README.md#cniinfo)
+```
+kubectl curl "http://<PODNAME>:7888/CNIInfo" -n <NAMESPACE>
+
+```
 
 **kernelVersion** - returns the kernel version. [example](README.md#kernelversion)
+```
+kubectl curl "http://<PODNAME>:7888/kernelVersion" -n <NAMESPACE>
+
+```
 
 **KubeletInfo** - returns kubelet information. [example](README.md#kubeletinfo)
+```
+kubectl curl "http://<PODNAME>:7888/KubeletInfo" -n <NAMESPACE>
+
+```
 
 **kubeProxyInfo** - returns kube-proxy command line info. [example](README.md#kubeproxyinfo)
+```
+kubectl curl "http://<PODNAME>:7888/kubeProxyInfo" -n <NAMESPACE>
+
+```
 
 **cloudProviderInfo** - returns information on cloud provider. [example](README.md#cloudproviderinfo)
+```
+kubectl curl "http://<PODNAME>:7888/cloudProviderInfo" -n <NAMESPACE>
+
+```
 
 **osRelease** - returns information on the node's operating system. [example](README.md#osrelease)
+```
+kubectl curl "http://<PODNAME>:7888/osRelease" -n <NAMESPACE>
+
+```
 
 **openedPorts** - returns information on open ports. [example](README.md#openedports)
+```
+kubectl curl "http://<PODNAME>:7888/openedPorts" -n <NAMESPACE>
+
+```
 
 **version** - returns the build version of the host-scanner.
+```
+kubectl curl "http://<PODNAME>:7888/version" -n <NAMESPACE>
+
+```
 
 
 
