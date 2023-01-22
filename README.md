@@ -421,7 +421,7 @@ kubectl logs <host-scanner-pod-name> --namespace <namespace> -f
                 "permissions": 504
             }
         ],
-    "CNIName":"Calico"
+    "CNINames":["Flannel","Calico"]
 }
 ```
 
