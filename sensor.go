@@ -65,6 +65,13 @@ func initLogger() *log.Logger {
 	return zap.NewStdLog(zapLogger)
 }
 
+func CaselessMatcher(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.ToLower(r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func initHTTPRouter() http.Handler {
 	negroniRouter := negroni.New()
 
@@ -74,7 +81,7 @@ func initHTTPRouter() http.Handler {
 	negroniRouter.Use(nLogger)
 	negroniRouter.UseFunc(filterNLogHTTPErrors)
 	negroniRouter.UseHandler(http.DefaultServeMux)
-	return negroniRouter
+	return CaselessMatcher(negroniRouter)
 }
 
 // filterNLogHTTPErrors intercept every HTTP request and in case of failure it logs the request and the response
