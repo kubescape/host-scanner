@@ -14,7 +14,7 @@ var BuildVersion string
 
 func initHTTPHandlers() {
 	// TODO: implement probe endpoint
-	http.HandleFunc("/kubeletConfigurations", func(rw http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/kubeletconfigurations", func(rw http.ResponseWriter, r *http.Request) {
 		conf, err := sensor.SenseKubeletConfigurations()
 
 		if err != nil {
@@ -26,7 +26,7 @@ func initHTTPHandlers() {
 			}
 		}
 	})
-	http.HandleFunc("/kubeletCommandLine", func(rw http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/kubeletcommandline", func(rw http.ResponseWriter, r *http.Request) {
 		proc, err := sensor.LocateKubeletProcess()
 
 		if err != nil {
@@ -41,17 +41,17 @@ func initHTTPHandlers() {
 		}
 
 	})
-	http.HandleFunc("/osRelease", osReleaseHandler)
-	http.HandleFunc("/kernelVersion", kernelVersionHandler)
-	http.HandleFunc("/linuxSecurityHardening", linuxSecurityHardeningHandler)
-	http.HandleFunc("/openedPorts", openedPortsHandler)
-	http.HandleFunc("/LinuxKernelVariables", LinuxKernelVariablesHandler)
-	http.HandleFunc("/kubeletInfo", kubeletInfoHandler)
-	http.HandleFunc("/kubeProxyInfo", kubeProxyHandler)
-	http.HandleFunc("/controlPlaneInfo", controlPlaneHandler)
-	http.HandleFunc("/cloudProviderInfo", cloudProviderHandler)
+	http.HandleFunc("/osrelease", osReleaseHandler)
+	http.HandleFunc("/kernelversion", kernelVersionHandler)
+	http.HandleFunc("/linuxsecurityhardening", linuxSecurityHardeningHandler)
+	http.HandleFunc("/openedports", openedPortsHandler)
+	http.HandleFunc("/linuxkernelvariables", LinuxKernelVariablesHandler)
+	http.HandleFunc("/kubeletinfo", kubeletInfoHandler)
+	http.HandleFunc("/kubeproxyinfo", kubeProxyHandler)
+	http.HandleFunc("/controlplaneinfo", controlPlaneHandler)
+	http.HandleFunc("/cloudproviderinfo", cloudProviderHandler)
 	http.HandleFunc("/version", versionHandler)
-	http.HandleFunc("/CNIInfo", CNIHandler)
+	http.HandleFunc("/cniinfo", CNIHandler)
 
 }
 
