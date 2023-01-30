@@ -1,11 +1,13 @@
 package sensor
 
 import (
+	"context"
 	"fmt"
 	"os"
 
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 	"github.com/weaveworks/procspy"
-	"go.uber.org/zap"
 )
 
 const (
@@ -39,27 +41,27 @@ func getOpenedPorts(pathsList []string) ([]procspy.Connection, error) {
 	return res, nil
 }
 
-func SenseOpenPorts() (*OpenPortsStatus, error) {
+func SenseOpenPorts(ctx context.Context) (*OpenPortsStatus, error) {
 	// TODO: take process name. walks on ProcNetTCPPaths for each process in the system
 	res := OpenPortsStatus{TcpPorts: make([]procspy.Connection, 0)}
 	// tcp
 	ports, err := getOpenedPorts(ProcNetTCPPaths)
 	if err != nil {
-		zap.L().Error("In SenseOpenPorts", zap.Strings("paths", ProcNetTCPPaths), zap.Error(err))
+		logger.L().Ctx(ctx).Error("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetTCPPaths)), helpers.Error(err))
 	} else {
 		res.TcpPorts = ports
 	}
 	// udp
 	ports, err = getOpenedPorts(ProcNetUDPPaths)
 	if err != nil {
-		zap.L().Error("In SenseOpenPorts", zap.Strings("paths", ProcNetUDPPaths), zap.Error(err))
+		logger.L().Ctx(ctx).Error("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetUDPPaths)), helpers.Error(err))
 	} else {
 		res.UdpPorts = ports
 	}
 	// icmp
 	ports, err = getOpenedPorts(ProcNetICMPPaths)
 	if err != nil {
-		zap.L().Error("In SenseOpenPorts", zap.Strings("paths", ProcNetICMPPaths), zap.Error(err))
+		logger.L().Ctx(ctx).Error("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetICMPPaths)), helpers.Error(err))
 	} else {
 		res.ICMPPorts = ports
 	}

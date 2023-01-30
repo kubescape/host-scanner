@@ -9,7 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 const (
@@ -55,8 +56,8 @@ func LocateProcessByExecSuffix(processSuffix string) (*ProcessDetails, error) {
 				processNameFromCMD = append([]byte{'/'}, processNameFromCMD...)
 			}
 			if bytes.HasSuffix(processNameFromCMD, []byte(processSuffix)) {
-				zap.L().Debug("process found", zap.String("processSuffix", processSuffix),
-					zap.Int64("pid", pid))
+				logger.L().Debug("process found", helpers.String("processSuffix", processSuffix),
+					helpers.Int("pid", int(pid)))
 				res := &ProcessDetails{PID: int32(pid), CmdLine: make([]string, 0, len(cmdLineSplitted))}
 				for splitIdx := range cmdLineSplitted {
 					res.CmdLine = append(res.CmdLine, string(cmdLineSplitted[splitIdx]))

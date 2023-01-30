@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -9,7 +10,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"go.uber.org/zap"
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 // CNI default constants
@@ -91,30 +93,30 @@ type ContainerRuntimeInfo struct {
 //  1. Find CNI config dir through kubelet flag (--container-runtime-endpoint). If not found:
 //  2. Find CNI config dir through process of supported container runtimes. If not found:
 //  3. return CNI config dir default that is defined in the container runtime properties.
-func GetCNIConfigPath(kubeletProc *ProcessDetails) string {
+func GetCNIConfigPath(ctx context.Context, kubeletProc *ProcessDetails) string {
 
 	// Attempting to find CR from kubelet.
-	CNIConfigDir, err := CNIConfigDirFromKubelet(kubeletProc)
+	CNIConfigDir, err := CNIConfigDirFromKubelet(ctx, kubeletProc)
 
 	if err == nil {
 		return CNIConfigDir
 	}
 
 	// Could construct container runtime from kubelet
-	zap.L().Debug("getCNIConfigPath - failed to get CNI config dir through kubelete flags.")
+	logger.L().Debug("getCNIConfigPath - failed to get CNI config dir through kubelete flags.")
 
 	// Attempting to find CR through process.
 	cr, err := getContainerRuntimeFromProcess()
 
 	if err != nil {
 		//Failed to get container runtime from process
-		zap.L().Debug("getCNIConfigPath - failed to get container runtime from process, return cni config dir default",
-			zap.Error(err))
+		logger.L().Debug("getCNIConfigPath - failed to get container runtime from process, return cni config dir default",
+			helpers.Error(err))
 
 		return CNIDefaultConfigDir
 	}
 
-	CNIConfigDir = cr.getCNIConfigDir()
+	CNIConfigDir = cr.getCNIConfigDir(ctx)
 	if CNIConfigDir == "" {
 		return CNIDefaultConfigDir
 	}
@@ -137,15 +139,15 @@ func (cr *ContainerRuntimeInfo) getConfigDirPath() string {
 func (cr *ContainerRuntimeInfo) getConfigPath() string {
 	configPath, _ := cr.process.GetArg(cr.properties.ConfigArgName)
 	if configPath == "" {
-		zap.L().Debug("getConfigPath - container runtime config file wasn't found through process flags, return default path",
-			zap.String("Container Runtime Name", cr.properties.Name),
-			zap.String("defaultConfigPath", cr.properties.DefaultConfigPath))
+		logger.L().Debug("getConfigPath - container runtime config file wasn't found through process flags, return default path",
+			helpers.String("Container Runtime Name", cr.properties.Name),
+			helpers.String("defaultConfigPath", cr.properties.DefaultConfigPath))
 		configPath = cr.properties.DefaultConfigPath
 
 	} else {
-		zap.L().Debug("getConfigPath - container runtime config file found through process flags",
-			zap.String("Container Runtime Name", cr.properties.Name),
-			zap.String("configPath", configPath))
+		logger.L().Debug("getConfigPath - container runtime config file found through process flags",
+			helpers.String("Container Runtime Name", cr.properties.Name),
+			helpers.String("configPath", configPath))
 	}
 
 	return path.Join(cr.rootDir, configPath)
@@ -156,7 +158,7 @@ func (cr *ContainerRuntimeInfo) getConfigPath() string {
 //  1. Getting container runtime configs directory path and container runtime config path.
 //  2. Build a decending ordered list of configs from configs directory and adding the config path as last. This is the order of precedence for configuration.
 //  3. Get CNI config path from ordered list. If not found, return empty string.
-func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig() string {
+func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig(ctx context.Context) string {
 
 	var configDirFilesFullPath []string
 
@@ -167,9 +169,9 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig() string {
 	outputDirFiles, err := os.ReadDir(configDirPath)
 
 	if err != nil {
-		zap.L().Error("getCNIConfigDirFromConfig- Failed to Call ReadDir",
-			zap.String("configDirPath", configDirPath),
-			zap.Error(err))
+		logger.L().Ctx(ctx).Error("getCNIConfigDirFromConfig- Failed to Call ReadDir",
+			helpers.String("configDirPath", configDirPath),
+			helpers.Error(err))
 	} else {
 		configDirFilesFullPath = make([]string, len(outputDirFiles), len(outputDirFiles))
 
@@ -191,7 +193,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig() string {
 	CNIConfigDir := cr.getCNIConfigDirFromConfigPaths(configDirFilesFullPath)
 
 	if CNIConfigDir == "" {
-		zap.L().Debug("getCNIConfigDirFromConfig didn't find CNI Config dir in container runtime configs", zap.String("Container Runtime Name", cr.properties.Name))
+		logger.L().Debug("getCNIConfigDirFromConfig didn't find CNI Config dir in container runtime configs", helpers.String("Container Runtime Name", cr.properties.Name))
 	}
 
 	return CNIConfigDir
@@ -205,7 +207,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfigPaths(configPaths []str
 		CNIConfigDir, err := cr.properties.ParseCNIFromConfigFunc(configPath)
 
 		if err != nil {
-			zap.L().Debug("getCNIConfigDirFromConfigPaths - Failed to parse config file", zap.String("configPath", configPath), zap.Error(err))
+			logger.L().Debug("getCNIConfigDirFromConfigPaths - Failed to parse config file", helpers.String("configPath", configPath), helpers.Error(err))
 			continue
 		}
 
@@ -225,7 +227,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromProcess() string {
 	if cr.properties.CNIConfigDirArgName != "" {
 		CNIConfigDir, _ := cr.process.GetArg(cr.properties.CNIConfigDirArgName)
 		if CNIConfigDir != "" {
-			zap.L().Debug("getCNIConfigDir found CNI Config Dir in process", zap.String("Container Runtime Name", cr.properties.Name))
+			logger.L().Debug("getCNIConfigDir found CNI Config Dir in process", helpers.String("Container Runtime Name", cr.properties.Name))
 		}
 
 		return CNIConfigDir
@@ -239,7 +241,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromProcess() string {
 //  1. Get dir from container runtime process flags. If not found:
 //  2. Get dir from container runtime config file(s). If not found:
 //  3. return default CNI config dir
-func (cr *ContainerRuntimeInfo) getCNIConfigDir() string {
+func (cr *ContainerRuntimeInfo) getCNIConfigDir(ctx context.Context) string {
 
 	CNIConfigDir := cr.getCNIConfigDirFromProcess()
 
@@ -247,7 +249,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDir() string {
 		return CNIConfigDir
 	}
 
-	CNIConfigDir = cr.getCNIConfigDirFromConfig()
+	CNIConfigDir = cr.getCNIConfigDirFromConfig(ctx)
 
 	return CNIConfigDir
 }
@@ -370,7 +372,7 @@ func parseCNIConfigDirFromConfigCrio(configPath string) (string, error) {
 
 // CNIConfigDirFromKubelet - returns cni config dir by kubelet --container-runtime-endpoint flag. Returns empty string if not found.
 // A specific case is cri-dockerd.sock process which it's container runtime is determined by kubernetes docs.
-func CNIConfigDirFromKubelet(proc *ProcessDetails) (string, error) {
+func CNIConfigDirFromKubelet(ctx context.Context, proc *ProcessDetails) (string, error) {
 
 	// Try from kubelet process flags
 	CNIConfigDir, _ := proc.GetArg(kubeletCNIConfigDir)
@@ -407,5 +409,5 @@ func CNIConfigDirFromKubelet(proc *ProcessDetails) (string, error) {
 		return "", err
 	}
 
-	return crObj.getCNIConfigDir(), nil
+	return crObj.getCNIConfigDir(ctx), nil
 }

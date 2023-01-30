@@ -1,12 +1,14 @@
 package sensor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
-	"go.uber.org/zap"
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 	"gopkg.in/yaml.v3"
 
 	ds "github.com/kubescape/host-scanner/sensor/datastructures"
@@ -91,7 +93,7 @@ func getEtcdDataDir() (string, error) {
 	return dataDir, nil
 }
 
-func makeProcessInfoVerbose(p *utils.ProcessDetails, specsPath, configPath, kubeConfigPath, clientCaPath string) *K8sProcessInfo {
+func makeProcessInfoVerbose(ctx context.Context, p *utils.ProcessDetails, specsPath, configPath, kubeConfigPath, clientCaPath string) *K8sProcessInfo {
 	ret := K8sProcessInfo{}
 
 	// init files
@@ -113,9 +115,9 @@ func makeProcessInfoVerbose(p *utils.ProcessDetails, specsPath, configPath, kube
 			continue
 		}
 
-		*file.data = makeHostFileInfoVerbose(file.path, false,
-			zap.String("in", "makeProcessInfoVerbose"),
-			zap.String("path", file.path),
+		*file.data = makeHostFileInfoVerbose(ctx, file.path, false,
+			helpers.String("in", "makeProcessInfoVerbose"),
+			helpers.String("path", file.path),
 		)
 	}
 
@@ -132,16 +134,16 @@ func makeProcessInfoVerbose(p *utils.ProcessDetails, specsPath, configPath, kube
 }
 
 // makeAPIserverEncryptionProviderConfigFile returns a ds.FileInfo object for the encryption provider config file of the API server. Required for https://workbench.cisecurity.org/sections/1126663/recommendations/1838675
-func makeAPIserverEncryptionProviderConfigFile(p *utils.ProcessDetails) *ds.FileInfo {
+func makeAPIserverEncryptionProviderConfigFile(ctx context.Context, p *utils.ProcessDetails) *ds.FileInfo {
 	encryptionProviderConfigPath, ok := p.GetArg(apiEncryptionProviderConfigArg)
 	if !ok {
-		zap.L().Warn("failed to find encryption provider config path", zap.String("in", "makeAPIserverEncryptionProviderConfigFile"))
+		logger.L().Ctx(ctx).Warning("failed to find encryption provider config path", helpers.String("in", "makeAPIserverEncryptionProviderConfigFile"))
 		return nil
 	}
 
-	fi, err := utils.MakeContaineredFileInfo(p, encryptionProviderConfigPath, true)
+	fi, err := utils.MakeContaineredFileInfo(ctx, p, encryptionProviderConfigPath, true)
 	if err != nil {
-		zap.L().Warn("failed to create encryption provider config file info", zap.Error(err))
+		logger.L().Ctx(ctx).Warning("failed to create encryption provider config file info", helpers.Error(err))
 		return nil
 	}
 
@@ -151,7 +153,7 @@ func makeAPIserverEncryptionProviderConfigFile(p *utils.ProcessDetails) *ds.File
 	if err != nil {
 		err = json.Unmarshal(fi.Content, &data)
 		if err != nil {
-			zap.L().Warn("failed to unmarshal encryption provider config file")
+			logger.L().Ctx(ctx).Warning("failed to unmarshal encryption provider config file")
 			return nil
 		}
 	}
@@ -161,7 +163,7 @@ func makeAPIserverEncryptionProviderConfigFile(p *utils.ProcessDetails) *ds.File
 	// marshal back to yaml
 	fi.Content, err = yaml.Marshal(data)
 	if err != nil {
-		zap.L().Warn("failed to marshal encryption provider config file", zap.Error(err))
+		logger.L().Ctx(ctx).Warning("failed to marshal encryption provider config file", helpers.Error(err))
 		return nil
 	}
 
@@ -220,85 +222,85 @@ func removeEncryptionProviderConfigSecrets(data map[string]interface{}) {
 }
 
 // makeAPIserverAuditPolicyFile returns a ds.FileInfo object for an audit policy file of the API server. Required for https://workbench.cisecurity.org/sections/1126663/recommendations/1838675
-func makeAPIserverAuditPolicyFile(p *utils.ProcessDetails) *ds.FileInfo {
+func makeAPIserverAuditPolicyFile(ctx context.Context, p *utils.ProcessDetails) *ds.FileInfo {
 	auditPolicyFilePath, ok := p.GetArg(auditPolicyFileArg)
 	if !ok {
-		zap.L().Info("audit-policy-file argument was not set ", zap.String("in", "makeAPIserverAuditPolicyFile"))
+		logger.L().Info("audit-policy-file argument was not set ", helpers.String("in", "makeAPIserverAuditPolicyFile"))
 		return nil
 	}
 
-	return makeContaineredFileInfoVerbose(p, auditPolicyFilePath, true,
-		zap.String("in", "makeAPIserverAuditPolicyFile"),
+	return makeContaineredFileInfoVerbose(ctx, p, auditPolicyFilePath, true,
+		helpers.String("in", "makeAPIserverAuditPolicyFile"),
 	)
 }
 
 // SenseControlPlaneInfo return `ControlPlaneInfo`
-func SenseControlPlaneInfo() (*ControlPlaneInfo, error) {
+func SenseControlPlaneInfo(ctx context.Context) (*ControlPlaneInfo, error) {
 	var err error
 	ret := ControlPlaneInfo{}
 
-	debugInfo := zap.String("in", "SenseControlPlaneInfo")
+	debugInfo := helpers.String("in", "SenseControlPlaneInfo")
 
 	apiProc, err := utils.LocateProcessByExecSuffix(apiServerExe)
 	if err == nil {
 		ret.APIServerInfo = &ApiServerInfo{}
-		ret.APIServerInfo.K8sProcessInfo = makeProcessInfoVerbose(apiProc, apiServerSpecsPath, "", "", "")
-		ret.APIServerInfo.EncryptionProviderConfigFile = makeAPIserverEncryptionProviderConfigFile(apiProc)
-		ret.APIServerInfo.AuditPolicyFile = makeAPIserverAuditPolicyFile(apiProc)
+		ret.APIServerInfo.K8sProcessInfo = makeProcessInfoVerbose(ctx, apiProc, apiServerSpecsPath, "", "", "")
+		ret.APIServerInfo.EncryptionProviderConfigFile = makeAPIserverEncryptionProviderConfigFile(ctx, apiProc)
+		ret.APIServerInfo.AuditPolicyFile = makeAPIserverAuditPolicyFile(ctx, apiProc)
 	} else {
-		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
+		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo", helpers.Error(err))
 	}
 
 	controllerMangerProc, err := utils.LocateProcessByExecSuffix(controllerManagerExe)
 	if err == nil {
-		ret.ControllerManagerInfo = makeProcessInfoVerbose(controllerMangerProc, controllerManagerSpecsPath, controllerManagerConfigPath, "", "")
+		ret.ControllerManagerInfo = makeProcessInfoVerbose(ctx, controllerMangerProc, controllerManagerSpecsPath, controllerManagerConfigPath, "", "")
 	} else {
-		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
+		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo", helpers.Error(err))
 	}
 
 	SchedulerProc, err := utils.LocateProcessByExecSuffix(schedulerExe)
 	if err == nil {
-		ret.SchedulerInfo = makeProcessInfoVerbose(SchedulerProc, schedulerSpecsPath, schedulerConfigPath, "", "")
+		ret.SchedulerInfo = makeProcessInfoVerbose(ctx, SchedulerProc, schedulerSpecsPath, schedulerConfigPath, "", "")
 	} else {
-		zap.L().Error("SenseControlPlaneInfo", zap.Error(err))
+		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo", helpers.Error(err))
 	}
 
 	// EtcdConfigFile
-	ret.EtcdConfigFile = makeHostFileInfoVerbose(etcdConfigPath,
+	ret.EtcdConfigFile = makeHostFileInfoVerbose(ctx, etcdConfigPath,
 		false,
 		debugInfo,
-		zap.String("component", "EtcdConfigFile"),
+		helpers.String("component", "EtcdConfigFile"),
 	)
 
 	// AdminConfigFile
-	ret.AdminConfigFile = makeHostFileInfoVerbose(adminConfigPath,
+	ret.AdminConfigFile = makeHostFileInfoVerbose(ctx, adminConfigPath,
 		false,
 		debugInfo,
-		zap.String("component", "AdminConfigFile"),
+		helpers.String("component", "AdminConfigFile"),
 	)
 
 	// PKIDIr
-	ret.PKIDIr = makeHostFileInfoVerbose(pkiDir,
+	ret.PKIDIr = makeHostFileInfoVerbose(ctx, pkiDir,
 		false,
 		debugInfo,
-		zap.String("component", "PKIDIr"),
+		helpers.String("component", "PKIDIr"),
 	)
 
 	// PKIFiles
-	ret.PKIFiles, err = makeHostDirFilesInfoVerbose(pkiDir, true, nil, 0)
+	ret.PKIFiles, err = makeHostDirFilesInfoVerbose(ctx, pkiDir, true, nil, 0)
 	if err != nil {
-		zap.L().Error("SenseControlPlaneInfo failed to get PKIFiles info", zap.Error(err))
+		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo failed to get PKIFiles info", helpers.Error(err))
 	}
 
 	// etcd data-dir
 	etcdDataDir, err := getEtcdDataDir()
 	if err != nil {
-		zap.L().Error("SenseControlPlaneInfo", zap.Error(ErrDataDirNotFound))
+		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo", helpers.Error(ErrDataDirNotFound))
 	} else {
-		ret.EtcdDataDir = makeHostFileInfoVerbose(etcdDataDir,
+		ret.EtcdDataDir = makeHostFileInfoVerbose(ctx, etcdDataDir,
 			false,
 			debugInfo,
-			zap.String("component", "EtcdDataDir"),
+			helpers.String("component", "EtcdDataDir"),
 		)
 	}
 

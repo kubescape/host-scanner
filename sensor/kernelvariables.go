@@ -1,13 +1,15 @@
 package sensor
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"strings"
 
-	"go.uber.org/zap"
+	"github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 const (
@@ -20,17 +22,17 @@ type KernelVariable struct {
 	Source string `json:"source"`
 }
 
-func SenseProcSysKernel() ([]KernelVariable, error) {
+func SenseProcSysKernel(ctx context.Context) ([]KernelVariable, error) {
 	procDir, err := os.Open(procSysKernelDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to procSysKernelDir dir(%s): %v", procSysKernelDir, err)
 	}
 	defer procDir.Close()
 
-	return walkVarsDir(procSysKernelDir, procDir)
+	return walkVarsDir(ctx, procSysKernelDir, procDir)
 }
 
-func walkVarsDir(dirPath string, procDir *os.File) ([]KernelVariable, error) {
+func walkVarsDir(ctx context.Context, dirPath string, procDir *os.File) ([]KernelVariable, error) {
 	var varsNames []string
 	varsList := make([]KernelVariable, 0, 128)
 
@@ -41,8 +43,8 @@ func walkVarsDir(dirPath string, procDir *os.File) ([]KernelVariable, error) {
 			varFile, err := os.Open(varFileName)
 			if err != nil {
 				if strings.Contains(err.Error(), "permission denied") {
-					zap.L().Error("In walkVarsDir failed to open file", zap.String("varFileName", varFileName),
-						zap.Error(err))
+					logger.L().Ctx(ctx).Error("In walkVarsDir failed to open file", helpers.String("varFileName", varFileName),
+						helpers.Error(err))
 					continue
 				}
 				return nil, fmt.Errorf("failed to open file (%s): %v", varFileName, err)
@@ -54,7 +56,7 @@ func walkVarsDir(dirPath string, procDir *os.File) ([]KernelVariable, error) {
 			}
 			if fileInfo.IsDir() {
 				// CAUTION: recursive call!!!
-				innerVars, err := walkVarsDir(varFileName, varFile)
+				innerVars, err := walkVarsDir(ctx, varFileName, varFile)
 				if err != nil {
 					return nil, fmt.Errorf("failed to walkVarsDir file (%s): %v", varFileName, err)
 				}
@@ -65,8 +67,8 @@ func walkVarsDir(dirPath string, procDir *os.File) ([]KernelVariable, error) {
 				strBld := strings.Builder{}
 				if _, err := io.Copy(&strBld, varFile); err != nil {
 					if strings.Contains(err.Error(), "operation not permitted") {
-						zap.L().Error("In walkVarsDir failed to Copy file", zap.String("varFileName", varFileName),
-							zap.Error(err))
+						logger.L().Ctx(ctx).Error("In walkVarsDir failed to Copy file", helpers.String("varFileName", varFileName),
+							helpers.Error(err))
 						continue
 					}
 					return nil, fmt.Errorf("failed to copy file (%s): %v", varFileName, err)
@@ -91,10 +93,10 @@ func SenseKernelConfs() ([]KernelVariable, error) {
 	return varsList, nil
 }
 
-func SenseKernelVariables() ([]KernelVariable, error) {
-	vars, err := SenseProcSysKernel()
+func SenseKernelVariables(ctx context.Context) ([]KernelVariable, error) {
+	vars, err := SenseProcSysKernel(ctx)
 	if confVars, err := SenseKernelConfs(); err != nil {
-		zap.L().Error("In SenseKernelVariables failed to SenseKernelConfs", zap.Error(err))
+		logger.L().Ctx(ctx).Error("In SenseKernelVariables failed to SenseKernelConfs", helpers.Error(err))
 	} else {
 		vars = append(vars, confVars...)
 	}

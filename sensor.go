@@ -6,9 +6,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -16,6 +16,10 @@ import (
 	"time"
 
 	"github.com/codegangsta/negroni"
+	logger "github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -32,7 +36,7 @@ func (blw bodyLogWriter) Write(b []byte) (int, error) {
 }
 
 var (
-	zapLogger *zap.Logger
+	zapLogger *otelzap.Logger
 )
 
 func initLogger() *log.Logger {
@@ -56,13 +60,14 @@ func initLogger() *log.Logger {
 	// 	zapConf.ErrorOutputPaths = append(zapConf.ErrorOutputPaths, config.LogFileName)
 	// }
 
-	zapLogger, err = zapConf.Build()
+	l, err := zapConf.Build()
+	zapLogger = otelzap.New(l)
 	if err != nil {
 		panic(err)
 	}
-	zap.ReplaceGlobals(zapLogger)
-	zap.RedirectStdLog(zapLogger)
-	return zap.NewStdLog(zapLogger)
+	otelzap.ReplaceGlobals(zapLogger)
+	zap.RedirectStdLog(zapLogger.Logger)
+	return zap.NewStdLog(zapLogger.Logger)
 }
 
 func CaselessMatcher(next http.Handler) http.Handler {
@@ -80,8 +85,14 @@ func initHTTPRouter() http.Handler {
 	negroniRouter.Use(negroni.NewRecovery())
 	negroniRouter.Use(nLogger)
 	negroniRouter.UseFunc(filterNLogHTTPErrors)
-	negroniRouter.UseHandler(http.DefaultServeMux)
+	handler := http.Handler(http.DefaultServeMux)
+	handler = otelhttp.NewHandler(handler, "", otelhttp.WithSpanNameFormatter(spanName))
+	negroniRouter.UseHandler(handler)
 	return CaselessMatcher(negroniRouter)
+}
+
+func spanName(_ string, req *http.Request) string {
+	return req.RequestURI
 }
 
 // filterNLogHTTPErrors intercept every HTTP request and in case of failure it logs the request and the response
@@ -92,7 +103,7 @@ func filterNLogHTTPErrors(rw http.ResponseWriter, r *http.Request, next http.Han
 		zap.String("remoteAddr", r.RemoteAddr),
 	}
 	if !strings.HasPrefix(r.RequestURI, "/isAlive") {
-		zap.L().Debug("In filterNLogHTTPErrors", zapArr...)
+		logger.L().Debug("In filterNLogHTTPErrors", helpers.String("requestURI", r.RequestURI), helpers.String("remoteAddr", r.RemoteAddr))
 	}
 
 	nrw, _ := rw.(negroni.ResponseWriter)
@@ -101,10 +112,10 @@ func filterNLogHTTPErrors(rw http.ResponseWriter, r *http.Request, next http.Han
 	blw.ResponseWriter = nrw
 	blw.resBody = bytes.NewBuffer([]byte(""))
 
-	bodyBuffer, err := ioutil.ReadAll(r.Body)
+	bodyBuffer, err := io.ReadAll(r.Body)
 	oldBody := r.Body
 	defer oldBody.Close()
-	r.Body = ioutil.NopCloser(bytes.NewReader(bodyBuffer))
+	r.Body = io.NopCloser(bytes.NewReader(bodyBuffer))
 	defer r.Body.Close()
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
@@ -121,12 +132,22 @@ func filterNLogHTTPErrors(rw http.ResponseWriter, r *http.Request, next http.Han
 			zap.String("Response body", blw.resBody.String()))...).Error("Request failed")
 	}
 	if r.Body != nil {
-		io.Copy(ioutil.Discard, r.Body)
+		io.Copy(io.Discard, r.Body)
 	}
 }
 
 // main
 func main() {
+	ctx := context.Background()
+	// to enable otel, set OTEL_COLLECTOR_SVC=otel-collector:4317
+	if otelHost, present := os.LookupEnv("OTEL_COLLECTOR_SVC"); present {
+		ctx = logger.InitOtel("host-scanner",
+			os.Getenv(BuildVersion),
+			os.Getenv("ACCOUNT_ID"),
+			url.URL{Host: otelHost})
+		defer logger.ShutdownOtel(ctx)
+	}
+
 	fmt.Println("Starting Kubescape cluster node host scanner service")
 	fmt.Println("Host scanner service build version: " + BuildVersion)
 	baseLogger := initLogger()
@@ -157,17 +178,17 @@ func main() {
 	//  os.Kill,syscall.SIGKILL, cannot be trapped
 	signal.Notify(termChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 	<-termChan // Blocks here until either SIGINT or SIGTERM is received.
-	zap.L().Warn("signal received")
+	logger.L().Ctx(ctx).Warning("signal received")
 	ctx, ctxCancel := context.WithTimeout(context.Background(), 61*time.Second)
 	defer ctxCancel()
 	if err := server.Shutdown(ctx); err != nil {
-		zap.L().Error("HTTP shutdown error", zap.Error(err))
+		logger.L().Ctx(ctx).Error("HTTP shutdown error", helpers.Error(err))
 	}
 
-	zap.L().Warn("shutdown gracefully")
+	logger.L().Ctx(ctx).Warning("shutdown gracefully")
 
 }
 
 func connectSensorsManagerWebSocket(sensorManagerAddress string) {
-	zap.L().Warn("Not implemented")
+	logger.L().Warning("Not implemented")
 }
