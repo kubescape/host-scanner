@@ -82,7 +82,7 @@ func getEtcdDataDir() (string, error) {
 
 	proc, err := utils.LocateProcessByExecSuffix(etcdExe)
 	if err != nil {
-		return "", fmt.Errorf("failed to locate kube-proxy process: %w", err)
+		return "", fmt.Errorf("failed to locate etcd process: %w", err)
 	}
 
 	dataDir, ok := proc.GetArg(etcdDataDirArg)
