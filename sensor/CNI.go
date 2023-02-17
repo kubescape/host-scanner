@@ -75,12 +75,14 @@ func getCNINames(ctx context.Context) []string {
 		processSuffix string
 	}{
 		{"aws", "aws-k8s-agent"}, // aws VPC CNI agent
-		// 'canal' CNI "sets up Calico to handle policy management and Flannel to manage the network itself". Therefore we will first
+		// 'canal' CNI "sets up Calico to handle policy management and Flannel to manage the network itself". Therefore, we will first
 		// check "calico" (which supports network policies and indicates for either 'canal' or 'calico') and then flannel.
 		{"Calico", "calico-node"},
 		{"Flannel", "flanneld"},
 		{"Cilium", "cilium-agent"},
 		{"WeaveNet", "weave-net"},
+		{"Kindnet", "kindnetd"},
+		{"Multus", "multus"},
 	}
 
 	for _, cni := range supportedCNIs {
