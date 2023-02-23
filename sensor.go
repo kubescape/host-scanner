@@ -40,7 +40,6 @@ var (
 )
 
 func initLogger() *log.Logger {
-	var err error
 	// https://godoc.org/go.uber.org/zap#AtomicLevel.UnmarshalText
 	lvl := zap.NewAtomicLevel()
 	// if config.LogLevel == "" {
@@ -48,7 +47,7 @@ func initLogger() *log.Logger {
 	// }
 	logLevel := "debug"
 	if err := lvl.UnmarshalText([]byte(logLevel)); err != nil {
-		panic(err)
+		logger.L().Fatal(err.Error())
 	}
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.RFC3339NanoTimeEncoder
@@ -61,10 +60,11 @@ func initLogger() *log.Logger {
 	// }
 
 	l, err := zapConf.Build()
-	zapLogger = otelzap.New(l)
 	if err != nil {
-		panic(err)
+		logger.L().Fatal(err.Error())
 	}
+	zapLogger = otelzap.New(l)
+
 	otelzap.ReplaceGlobals(zapLogger)
 	zap.RedirectStdLog(zapLogger.Logger)
 	return zap.NewStdLog(zapLogger.Logger)
@@ -148,8 +148,8 @@ func main() {
 		defer logger.ShutdownOtel(ctx)
 	}
 
-	fmt.Println("Starting Kubescape cluster node host scanner service")
-	fmt.Println("Host scanner service build version: " + BuildVersion)
+	logger.L().Info("Starting Kubescape cluster node host scanner service")
+	logger.L().Info("Host scanner service build version: " + BuildVersion)
 	baseLogger := initLogger()
 	negroniRouter := initHTTPRouter()
 
@@ -159,12 +159,12 @@ func main() {
 	connectSensorsManagerWebSocket(sensorManagerAddress)
 	initHTTPHandlers()
 	listeningPort := 7888
-	zapLogger.Info("Listening...", zap.Int("port", listeningPort))
+	logger.L().Info("Listening...", helpers.Int("port", listeningPort))
 	if strings.Contains(os.Getenv("CADB_DEBUG"), "pprof") {
-		fmt.Println("Debug mode - pprof on")
+		logger.L().Debug("Debug mode - pprof on")
 		go func() {
 
-			log.Println(http.ListenAndServe(":6060", nil))
+			logger.L().Error(http.ListenAndServe(":6060", nil).Error())
 		}()
 	}
 	listenAddress := fmt.Sprintf(":%d", listeningPort)
