@@ -146,6 +146,7 @@ func main() {
 		ctx = logger.InitOtel("host-scanner",
 			os.Getenv(BuildVersion),
 			os.Getenv("ACCOUNT_ID"),
+			os.Getenv("CLUSTER_NAME"),
 			url.URL{Host: otelHost})
 		defer logger.ShutdownOtel(ctx)
 	}
