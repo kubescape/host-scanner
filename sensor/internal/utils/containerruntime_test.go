@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,9 +38,7 @@ func Test_parseCNIPathsFromConfigContainerd(t *testing.T) {
 			CNIConfigDir, err := parseCNIConfigDirFromConfigContainerd(tt.path)
 
 			if err != nil {
-				if tt.wantErr {
-					fmt.Println(err)
-				} else {
+				if !tt.wantErr {
 					assert.NoError(t, err)
 				}
 
@@ -87,9 +84,7 @@ func Test_parseCNIPathsFromConfigCrio(t *testing.T) {
 			CNIConfigDir, err := parseCNIConfigDirFromConfigCrio(tt.path)
 
 			if err != nil {
-				if tt.wantErr {
-					fmt.Println(err)
-				} else {
+				if !tt.wantErr {
 					assert.NoError(t, err)
 				}
 

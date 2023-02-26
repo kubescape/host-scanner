@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -95,9 +94,7 @@ func Test_LookupUsernameByUID(t *testing.T) {
 			username, err := lookupUsernameByUID(tt.uid, tt.root)
 
 			if err != nil {
-				if tt.wantErr {
-					fmt.Println(err)
-				} else {
+				if !tt.wantErr {
 					assert.NoError(t, err)
 				}
 
@@ -155,9 +152,7 @@ func Test_LookupGroupByUID(t *testing.T) {
 			groupname, err := LookupGroupnameByGID(tt.gid, tt.root)
 
 			if err != nil {
-				if tt.wantErr {
-					fmt.Println(err)
-				} else {
+				if !tt.wantErr {
 					assert.NoError(t, err)
 				}
 

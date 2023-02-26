@@ -18,6 +18,7 @@ import (
 	"github.com/codegangsta/negroni"
 	logger "github.com/kubescape/go-logger"
 	"github.com/kubescape/go-logger/helpers"
+	"github.com/kubescape/go-logger/zaplogger"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
@@ -40,15 +41,13 @@ var (
 )
 
 func initLogger() *log.Logger {
-	var err error
 	// https://godoc.org/go.uber.org/zap#AtomicLevel.UnmarshalText
 	lvl := zap.NewAtomicLevel()
-	// if config.LogLevel == "" {
-	// 	config.LogLevel = "warn"
-	// }
-	logLevel := "debug"
+
+	logLevel := logger.L().GetLevel()
+	// TODO: change "warning" level to "warn" to match zap
 	if err := lvl.UnmarshalText([]byte(logLevel)); err != nil {
-		panic(err)
+		logger.L().Warning("failed to set zap logger level", helpers.Error(err))
 	}
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.RFC3339NanoTimeEncoder
@@ -61,10 +60,11 @@ func initLogger() *log.Logger {
 	// }
 
 	l, err := zapConf.Build()
-	zapLogger = otelzap.New(l)
 	if err != nil {
-		panic(err)
+		logger.L().Fatal(err.Error())
 	}
+	zapLogger = otelzap.New(l)
+
 	otelzap.ReplaceGlobals(zapLogger)
 	zap.RedirectStdLog(zapLogger.Logger)
 	return zap.NewStdLog(zapLogger.Logger)
@@ -138,6 +138,8 @@ func filterNLogHTTPErrors(rw http.ResponseWriter, r *http.Request, next http.Han
 
 // main
 func main() {
+	logger.InitLogger(zaplogger.LoggerName)
+
 	ctx := context.Background()
 	// to enable otel, set OTEL_COLLECTOR_SVC=otel-collector:4317
 	if otelHost, present := os.LookupEnv("OTEL_COLLECTOR_SVC"); present {
@@ -148,8 +150,8 @@ func main() {
 		defer logger.ShutdownOtel(ctx)
 	}
 
-	fmt.Println("Starting Kubescape cluster node host scanner service")
-	fmt.Println("Host scanner service build version: " + BuildVersion)
+	logger.L().Info("Starting Kubescape cluster node host scanner service")
+	logger.L().Info("Host scanner service build version: " + BuildVersion)
 	baseLogger := initLogger()
 	negroniRouter := initHTTPRouter()
 
@@ -159,12 +161,12 @@ func main() {
 	connectSensorsManagerWebSocket(sensorManagerAddress)
 	initHTTPHandlers()
 	listeningPort := 7888
-	zapLogger.Info("Listening...", zap.Int("port", listeningPort))
+	logger.L().Info("Listening...", helpers.Int("port", listeningPort))
 	if strings.Contains(os.Getenv("CADB_DEBUG"), "pprof") {
-		fmt.Println("Debug mode - pprof on")
+		logger.L().Debug("Debug mode - pprof on")
 		go func() {
 
-			log.Println(http.ListenAndServe(":6060", nil))
+			logger.L().Error(http.ListenAndServe(":6060", nil).Error())
 		}()
 	}
 	listenAddress := fmt.Sprintf(":%d", listeningPort)
