@@ -40,3 +40,6 @@ jobs:
         run: go build
         env: 
           CGO_ENABLED: 0 
+          
+      - name: Coveralls
+        uses: coverallsapp/github-action@v1
