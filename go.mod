@@ -8,7 +8,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.4.0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/jarcoal/httpmock v1.2.0
-	github.com/kubescape/go-logger v0.0.10
+	github.com/kubescape/go-logger v0.0.11
 	github.com/uptrace/opentelemetry-go-extra/otelzap v0.1.18
 	github.com/weaveworks/procspy v0.0.0-20150706124340-cb970aa190c3
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0
