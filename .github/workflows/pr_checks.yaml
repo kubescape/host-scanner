@@ -40,7 +40,10 @@ jobs:
         run: go build
         env: 
           CGO_ENABLED: 0 
-          
+
+      - name: Convert coverage to lcov
+        uses: jandelgado/gcov2lcov-action@v1
+
       - name: Coveralls
         uses: coverallsapp/github-action@v1
         with:
