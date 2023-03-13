@@ -32,7 +32,7 @@ jobs:
           go-version: 1.18
  
       - name: Run UnitTest
-        run: go test -v -covermode=count -coverprofile=coverage.out
+        run: go test -v ./... -covermode=count -coverprofile=coverage.out
         env: 
           CGO_ENABLED: 0
       
