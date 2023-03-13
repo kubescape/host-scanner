@@ -32,7 +32,7 @@ jobs:
           go-version: 1.19
  
       - name: Run UnitTest
-        run: go test -v ./...
+        run: go test -v ./... -covermode=count -coverprofile=coverage.out
         env: 
           CGO_ENABLED: 0
       
@@ -40,3 +40,9 @@ jobs:
         run: go build
         env: 
           CGO_ENABLED: 0 
+          
+      - name: Coveralls
+        uses: coverallsapp/github-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov
