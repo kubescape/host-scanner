@@ -192,6 +192,7 @@ func main() {
 
 }
 
+// TODO
 func connectSensorsManagerWebSocket(sensorManagerAddress string) {
 	logger.L().Warning("Not implemented")
 }
