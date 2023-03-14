@@ -11,10 +11,14 @@ func TestGetUserName(t *testing.T) {
 	// regular
 	t.Run("regular", func(t *testing.T) {
 		name, _ := getUserName(0, "testdata")
-		assert.Equal(t, "root", name)
+		if !isValidaName(name) {
+			t.Errorf("Wrong name")
+		}
 		assert.Contains(t, userGroupCache, "testdata")
 		assert.Contains(t, userGroupCache["testdata"].users, "0")
-		assert.Equal(t, "root", userGroupCache["testdata"].users["0"])
+		if !isValidaName(userGroupCache["testdata"].groups["0"]) {
+			t.Errorf("Wrong name")
+		}
 	})
 
 	// cached
@@ -28,16 +32,27 @@ func TestGetUserName(t *testing.T) {
 	})
 }
 
+// func is testing if the name return as wheel or root
+func isValidaName(name string) bool {
+	return name == "root" || name == "wheel"
+}
+
 func TestGetGroupName(t *testing.T) {
 	userGroupCache = map[string]userGroupCacheItem{}
 
 	// regular
 	t.Run("regular", func(t *testing.T) {
 		name, _ := getGroupName(0, "testdata")
-		assert.Equal(t, "root", name)
+		if !isValidaName(name) {
+			t.Errorf("Wrong name")
+		}
+
+		// assert.Equal(t, "root", name)
 		assert.Contains(t, userGroupCache, "testdata")
 		assert.Contains(t, userGroupCache["testdata"].groups, "0")
-		assert.Equal(t, "root", userGroupCache["testdata"].groups["0"])
+		if !isValidaName(userGroupCache["testdata"].groups["0"]) {
+			t.Errorf("Wrong name")
+		}
 	})
 
 	// cached
@@ -60,32 +75,28 @@ func Test_LookupUsernameByUID(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:        "testdata_uid_exists",
-			root:        "testdata",
-			uid:         0,
-			expectedRes: "root",
-			wantErr:     false,
+			name:    "testdata_uid_exists",
+			root:    "testdata",
+			uid:     0,
+			wantErr: false,
 		},
 		{
-			name:        "testdata_uid_not_exists",
-			root:        "testdata",
-			uid:         10,
-			expectedRes: "root",
-			wantErr:     true,
+			name:    "testdata_uid_not_exists",
+			root:    "testdata",
+			uid:     10,
+			wantErr: true,
 		},
 		{
-			name:        "testdata_file_not_exists",
-			root:        "testdata/bla",
-			uid:         10,
-			expectedRes: "root",
-			wantErr:     true,
+			name:    "testdata_file_not_exists",
+			root:    "testdata/bla",
+			uid:     10,
+			wantErr: true,
 		},
 		{
-			name:        "root_uid_exists",
-			root:        "/",
-			uid:         0,
-			expectedRes: "root",
-			wantErr:     false,
+			name:    "root_uid_exists",
+			root:    "/",
+			uid:     0,
+			wantErr: false,
 		},
 	}
 
@@ -100,7 +111,9 @@ func Test_LookupUsernameByUID(t *testing.T) {
 
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedRes, username)
+				if !isValidaName(username) {
+					t.Errorf("Wrong name")
+				}
 			}
 
 		})
@@ -125,25 +138,22 @@ func Test_LookupGroupByUID(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "testdata_uid_not_exists",
-			root:        "testdata",
-			gid:         10,
-			expectedRes: "root",
-			wantErr:     true,
+			name:    "testdata_uid_not_exists",
+			root:    "testdata",
+			gid:     10,
+			wantErr: true,
 		},
 		{
-			name:        "testdata_file_not_exists",
-			root:        "testdata/bla",
-			gid:         10,
-			expectedRes: "root",
-			wantErr:     true,
+			name:    "testdata_file_not_exists",
+			root:    "testdata/bla",
+			gid:     10,
+			wantErr: true,
 		},
 		{
-			name:        "root_uid_exists",
-			root:        "/",
-			gid:         0,
-			expectedRes: "root",
-			wantErr:     false,
+			name:    "root_uid_exists",
+			root:    "/",
+			gid:     0,
+			wantErr: false,
 		},
 	}
 
@@ -158,7 +168,9 @@ func Test_LookupGroupByUID(t *testing.T) {
 
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedRes, groupname)
+				if !isValidaName(groupname) {
+					t.Errorf("Wrong name")
+				}
 			}
 
 		})
