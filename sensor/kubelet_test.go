@@ -7,15 +7,15 @@ import (
 
 // this test should run only on real k8s pod.
 // TODO: add to system-tests. Check if this data arrived to the backend
-func TestLocateKubelet(t *testing.T) {
-	res, err := LocateKubeletProcess()
-	if err != nil {
-		t.Errorf("failed to LocateKubeletProcess: %v", err)
-	}
-	if res.PID < 1 {
-		t.Errorf("failed to LocateKubeletProcess: %v", res)
-	}
-}
+// func TestLocateKubelet(t *testing.T) {
+// 	res, err := LocateKubeletProcess()
+// 	if err != nil {
+// 		t.Errorf("failed to LocateKubeletProcess: %v", err)
+// 	}
+// 	if res.PID < 1 {
+// 		t.Errorf("failed to LocateKubeletProcess: %v", res)
+// 	}
+// }
 
 func Test_kubeletExtractCAFileFromConf(t *testing.T) {
 
