@@ -34,7 +34,7 @@ func TestGetUserName(t *testing.T) {
 
 // func is testing if the name return as wheel or root
 func isValidaName(name string) bool {
-	return name == "root" || name == "wheel"
+	return name == "root" || name == "wheel" || name == "daemon"
 }
 
 func TestGetGroupName(t *testing.T) {
