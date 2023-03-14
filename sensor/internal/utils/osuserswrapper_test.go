@@ -12,12 +12,12 @@ func TestGetUserName(t *testing.T) {
 	t.Run("regular", func(t *testing.T) {
 		name, _ := getUserName(0, "testdata")
 		if !isValidaName(name) {
-			t.Errorf("Wrong name")
+			t.Errorf("Wrong name '%s'", name)
 		}
 		assert.Contains(t, userGroupCache, "testdata")
 		assert.Contains(t, userGroupCache["testdata"].users, "0")
 		if !isValidaName(userGroupCache["testdata"].groups["0"]) {
-			t.Errorf("Wrong name")
+			t.Errorf("Wrong group '%s'", userGroupCache["testdata"].groups["0"])
 		}
 	})
 
@@ -169,7 +169,7 @@ func Test_LookupGroupByUID(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				if !isValidaName(groupname) {
-					t.Errorf("Wrong name")
+					t.Errorf("Wrong name '%s'", groupname)
 				}
 			}
 
