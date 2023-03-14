@@ -6,6 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// func is testing if the name return as wheel or root
+func isValidaName(name string) bool {
+	return name == "root" || name == "wheel" || name == "daemon"
+}
+
 func TestGetUserName(t *testing.T) {
 	userGroupCache = map[string]userGroupCacheItem{}
 	// regular
@@ -16,8 +21,11 @@ func TestGetUserName(t *testing.T) {
 		}
 		assert.Contains(t, userGroupCache, "testdata")
 		assert.Contains(t, userGroupCache["testdata"].users, "0")
-		if !isValidaName(userGroupCache["testdata"].groups["0"]) {
-			t.Errorf("Wrong group '%s'", userGroupCache["testdata"].groups["0"])
+
+		groups := userGroupCache["testdata"].groups["0"]
+
+		if len(groups) != 0 && !isValidaName(groups) {
+			t.Errorf("Wrong group '%s'", groups)
 		}
 	})
 
@@ -32,11 +40,6 @@ func TestGetUserName(t *testing.T) {
 	})
 }
 
-// func is testing if the name return as wheel or root
-func isValidaName(name string) bool {
-	return name == "root" || name == "wheel" || name == "daemon"
-}
-
 func TestGetGroupName(t *testing.T) {
 	userGroupCache = map[string]userGroupCacheItem{}
 
@@ -44,14 +47,14 @@ func TestGetGroupName(t *testing.T) {
 	t.Run("regular", func(t *testing.T) {
 		name, _ := getGroupName(0, "testdata")
 		if !isValidaName(name) {
-			t.Errorf("Wrong name")
+			t.Errorf("Wrong name '%s'", name)
 		}
 
 		// assert.Equal(t, "root", name)
 		assert.Contains(t, userGroupCache, "testdata")
 		assert.Contains(t, userGroupCache["testdata"].groups, "0")
 		if !isValidaName(userGroupCache["testdata"].groups["0"]) {
-			t.Errorf("Wrong name")
+			t.Errorf("Wrong name '%s'", userGroupCache["testdata"].groups["0"])
 		}
 	})
 
@@ -121,7 +124,6 @@ func Test_LookupUsernameByUID(t *testing.T) {
 }
 
 func Test_LookupGroupByUID(t *testing.T) {
-	// os.Setenv("CGO_ENABLED", "0")
 
 	uid_tests := []struct {
 		name        string

@@ -24,10 +24,12 @@ func Test_makeHostDirFilesInfo(t *testing.T) {
 	defer os.Remove(f.Name()) // clean up
 	logger.InitLogger("pretty")
 	logger.L().SetWriter(f)
+	
 	// test
 	fileInfos, err = makeHostDirFilesInfoVerbose(context.TODO(), "testdata/testmakehostfiles", true, nil, maxRecursionDepth-1)
 	assert.NoError(t, err)
 	assert.Len(t, fileInfos, 4)
+
 	// check log output for error message
 	data, err := os.ReadFile(f.Name())
 	assert.NoError(t, err)
