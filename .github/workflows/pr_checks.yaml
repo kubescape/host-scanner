@@ -13,4 +13,5 @@ jobs:
     uses: kubescape/workflows/.github/workflows/go-basic-tests.yaml@main
     with:
       GO_VERSION: 1.19
+      CGO_ENABLED: 0 
     secrets: inherit
