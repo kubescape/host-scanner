@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"runtime"
 	"strings"
 
 	"github.com/kubescape/go-logger"
@@ -15,6 +14,8 @@ import (
 
 const (
 	procSysKernelDir = "/proc/sys/kernel"
+	//TODO: add dir for macos (?)
+	//TODO: add dir for windows (?)
 )
 
 type KernelVariable struct {
@@ -24,31 +25,16 @@ type KernelVariable struct {
 }
 
 func SenseProcSysKernel(ctx context.Context) ([]KernelVariable, error) {
-	osVar := runtime.GOOS
 
-	switch osVar {
-	case "windows":
-		fmt.Println("Windows")
-		// TODO: need to add functionality
+	// open system kernel directory (only Linux OS)
+	procDir, err := os.Open(procSysKernelDir)
 
-	case "darwin":
-		fmt.Println("MAC operating system")
-		// TODO: need to add functionality
-	case "linux":
-		fmt.Println("linux")
-		procDir, err := os.Open(procSysKernelDir)
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to procSysKernelDir dir(%s): %v", procSysKernelDir, err)
-		}
-		defer procDir.Close()
-
-		return walkVarsDir(ctx, procSysKernelDir, procDir)
-	default:
-		fmt.Printf("Tests are running over OS: %s.\n", osVar)
+	if err != nil {
+		return nil, fmt.Errorf("failed to procSysKernelDir dir(%s): %v", procSysKernelDir, err)
 	}
+	defer procDir.Close()
 
-	return nil, fmt.Errorf("error")
+	return walkVarsDir(ctx, procSysKernelDir, procDir)
 }
 
 func walkVarsDir(ctx context.Context, dirPath string, procDir *os.File) ([]KernelVariable, error) {
