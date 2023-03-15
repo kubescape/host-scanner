@@ -11,6 +11,7 @@ func TestSenseProcSysKernel(t *testing.T) {
 
 	// get OS type
 	osVar := runtime.GOOS
+	fmt.Printf("Tests are running over OS: %s.\n", osVar)
 
 	switch osVar {
 	case "windows":
