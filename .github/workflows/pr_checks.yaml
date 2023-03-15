@@ -2,50 +2,16 @@ name: pr-checks
 
 on:
   pull_request:
-    branches: [ master, dev ]
+    branches: [ master, main ]
     types: [ edited, opened, synchronize, reopened ]
-    paths-ignore:
-      - '**.md'
-      - '**.yaml'
+    paths-ignore: ['**.md']
 jobs:
-  build:
-    name: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Cache Go modules (Linux)
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
- 
-      - name: Run UnitTest
-        run: go test -v ./... -covermode=count -coverprofile=coverage.out
-        env: 
-          CGO_ENABLED: 0
-      
-      - name: Test go build
-        run: go build
-        env: 
-          CGO_ENABLED: 0 
-
-      - name: Convert coverage to lcov
-        uses: jandelgado/gcov2lcov-action@v1
-
-      - name: Coveralls
-        uses: coverallsapp/github-action@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage.lcov
+  # main job of testing and building the env. 
+  test:
+    permissions:
+      pull-requests: write
+    uses: kubescape/workflows/.github/workflows/go-basic-tests.yaml@main
+    with:
+      GO_VERSION: 1.19
+      CGO_ENABLED: 0 
+    secrets: inherit
