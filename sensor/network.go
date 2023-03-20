@@ -47,21 +47,21 @@ func SenseOpenPorts(ctx context.Context) (*OpenPortsStatus, error) {
 	// tcp
 	ports, err := getOpenedPorts(ProcNetTCPPaths)
 	if err != nil {
-		logger.L().Ctx(ctx).Error("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetTCPPaths)), helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetTCPPaths)), helpers.Error(err))
 	} else {
 		res.TcpPorts = ports
 	}
 	// udp
 	ports, err = getOpenedPorts(ProcNetUDPPaths)
 	if err != nil {
-		logger.L().Ctx(ctx).Error("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetUDPPaths)), helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetUDPPaths)), helpers.Error(err))
 	} else {
 		res.UdpPorts = ports
 	}
 	// icmp
 	ports, err = getOpenedPorts(ProcNetICMPPaths)
 	if err != nil {
-		logger.L().Ctx(ctx).Error("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetICMPPaths)), helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("In SenseOpenPorts", helpers.String("paths", fmt.Sprintf("%v", ProcNetICMPPaths)), helpers.Error(err))
 	} else {
 		res.ICMPPorts = ports
 	}

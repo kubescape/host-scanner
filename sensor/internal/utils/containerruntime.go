@@ -169,13 +169,13 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig(ctx context.Context) s
 	outputDirFiles, err := os.ReadDir(configDirPath)
 
 	if err != nil {
-		logger.L().Ctx(ctx).Error("getCNIConfigDirFromConfig- Failed to Call ReadDir",
+		logger.L().Ctx(ctx).Warning("getCNIConfigDirFromConfig- Failed to Call ReadDir",
 			helpers.String("configDirPath", configDirPath),
 			helpers.Error(err))
 	} else {
-		configDirFilesFullPath = make([]string, len(outputDirFiles), len(outputDirFiles))
+		configDirFilesFullPath = make([]string, 0, len(outputDirFiles))
 
-		// constuct and reverse sort config dir files full path
+		// construct and reverse sort config dir files full path
 		for i, filename := range outputDirFiles {
 			configDirFilesFullPath[i] = path.Join(configDirPath, filename.Name())
 		}

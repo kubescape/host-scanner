@@ -27,7 +27,7 @@ func SenseCNIInfo(ctx context.Context) (*CNIInfo, error) {
 	CNIConfigInfo, err := makeCNIConfigFilesInfo(ctx)
 
 	if err != nil {
-		logger.L().Ctx(ctx).Error("SenseCNIInfo", helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("SenseCNIInfo", helpers.Error(err))
 	} else {
 		ret.CNIConfigFiles = CNIConfigInfo
 	}
@@ -94,14 +94,12 @@ func getCNINames(ctx context.Context) []string {
 		}
 
 		if err != nil {
-			logger.L().Ctx(ctx).Error("getCNIName- Failed to locate process for cni",
+			logger.L().Ctx(ctx).Warning("getCNIName- Failed to locate process for cni",
 				helpers.String("cni name", cni.name),
 				helpers.Error(err))
 		}
 
 	}
-
-	logger.L().Debug("No supported CNI process was found")
 
 	return CNIs
 }
