@@ -105,7 +105,7 @@ func makeProcessInfoVerbose(ctx context.Context, p *utils.ProcessDetails, specsP
 		{&ret.SpecsFile, specsPath, "specs"},
 		{&ret.ConfigFile, configPath, "config"},
 		{&ret.KubeConfigFile, kubeConfigPath, "kubeconfig"},
-		{&ret.ClientCAFile, clientCaPath, "calient ca certificate"},
+		{&ret.ClientCAFile, clientCaPath, "client ca certificate"},
 	}
 
 	// get data
@@ -149,11 +149,10 @@ func makeAPIserverEncryptionProviderConfigFile(ctx context.Context, p *utils.Pro
 
 	// remove sensitive data
 	data := map[string]interface{}{}
-	err = yaml.Unmarshal(fi.Content, &data)
-	if err != nil {
-		err = json.Unmarshal(fi.Content, &data)
-		if err != nil {
-			logger.L().Ctx(ctx).Warning("failed to unmarshal encryption provider config file")
+
+	if errYaml := yaml.Unmarshal(fi.Content, &data); errYaml != nil {
+		if errJson := json.Unmarshal(fi.Content, &data); errJson != nil {
+			logger.L().Ctx(ctx).Warning("failed to unmarshal encryption provider config file", helpers.Error(errJson), helpers.Error(errYaml))
 			return nil
 		}
 	}
@@ -248,21 +247,21 @@ func SenseControlPlaneInfo(ctx context.Context) (*ControlPlaneInfo, error) {
 		ret.APIServerInfo.EncryptionProviderConfigFile = makeAPIserverEncryptionProviderConfigFile(ctx, apiProc)
 		ret.APIServerInfo.AuditPolicyFile = makeAPIserverAuditPolicyFile(ctx, apiProc)
 	} else {
-		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo", helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("SenseControlPlaneInfo", helpers.Error(err))
 	}
 
 	controllerMangerProc, err := utils.LocateProcessByExecSuffix(controllerManagerExe)
 	if err == nil {
 		ret.ControllerManagerInfo = makeProcessInfoVerbose(ctx, controllerMangerProc, controllerManagerSpecsPath, controllerManagerConfigPath, "", "")
 	} else {
-		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo", helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("SenseControlPlaneInfo", helpers.Error(err))
 	}
 
 	SchedulerProc, err := utils.LocateProcessByExecSuffix(schedulerExe)
 	if err == nil {
 		ret.SchedulerInfo = makeProcessInfoVerbose(ctx, SchedulerProc, schedulerSpecsPath, schedulerConfigPath, "", "")
 	} else {
-		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo", helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("SenseControlPlaneInfo", helpers.Error(err))
 	}
 
 	// EtcdConfigFile
@@ -289,13 +288,13 @@ func SenseControlPlaneInfo(ctx context.Context) (*ControlPlaneInfo, error) {
 	// PKIFiles
 	ret.PKIFiles, err = makeHostDirFilesInfoVerbose(ctx, pkiDir, true, nil, 0)
 	if err != nil {
-		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo failed to get PKIFiles info", helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("SenseControlPlaneInfo failed to get PKIFiles info", helpers.Error(err))
 	}
 
 	// etcd data-dir
 	etcdDataDir, err := getEtcdDataDir()
 	if err != nil {
-		logger.L().Ctx(ctx).Error("SenseControlPlaneInfo", helpers.Error(ErrDataDirNotFound))
+		logger.L().Ctx(ctx).Warning("SenseControlPlaneInfo", helpers.Error(ErrDataDirNotFound))
 	} else {
 		ret.EtcdDataDir = makeHostFileInfoVerbose(ctx, etcdDataDir,
 			false,

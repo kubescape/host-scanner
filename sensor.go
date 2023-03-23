@@ -80,10 +80,7 @@ func CaselessMatcher(next http.Handler) http.Handler {
 func initHTTPRouter() http.Handler {
 	negroniRouter := negroni.New()
 
-	nLogger := negroni.NewLogger()
-	nLogger.SetFormat("{{.StartTime}} | {{.Status}} | \t {{.Duration}} | {{.Hostname}} | {{.Method}}" + " {{.Request.RequestURI}}")
 	negroniRouter.Use(negroni.NewRecovery())
-	negroniRouter.Use(nLogger)
 	negroniRouter.UseFunc(filterNLogHTTPErrors)
 	handler := http.Handler(http.DefaultServeMux)
 	handler = otelhttp.NewHandler(handler, "", otelhttp.WithSpanNameFormatter(spanName))
@@ -151,22 +148,18 @@ func main() {
 		defer logger.ShutdownOtel(ctx)
 	}
 
-	logger.L().Info("Starting Kubescape cluster node host scanner service")
-	logger.L().Info("Host scanner service build version: " + BuildVersion)
+	logger.L().Info("Starting Kubescape cluster node host scanner service", helpers.String("buildVersion", BuildVersion))
 	baseLogger := initLogger()
 	negroniRouter := initHTTPRouter()
 
 	defer zapLogger.Sync()
 
-	sensorManagerAddress := os.Getenv("ARMO_SENSORS_MANAGER")
-	connectSensorsManagerWebSocket(sensorManagerAddress)
 	initHTTPHandlers()
 	listeningPort := 7888
 	logger.L().Info("Listening...", helpers.Int("port", listeningPort))
 	if strings.Contains(os.Getenv("CADB_DEBUG"), "pprof") {
 		logger.L().Debug("Debug mode - pprof on")
 		go func() {
-
 			logger.L().Error(http.ListenAndServe(":6060", nil).Error())
 		}()
 	}
@@ -181,18 +174,13 @@ func main() {
 	//  os.Kill,syscall.SIGKILL, cannot be trapped
 	signal.Notify(termChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 	<-termChan // Blocks here until either SIGINT or SIGTERM is received.
-	logger.L().Ctx(ctx).Warning("signal received")
+	logger.L().Ctx(ctx).Info("shutdown signal received")
 	ctx, ctxCancel := context.WithTimeout(context.Background(), 61*time.Second)
 	defer ctxCancel()
 	if err := server.Shutdown(ctx); err != nil {
-		logger.L().Ctx(ctx).Error("HTTP shutdown error", helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("HTTP shutdown error", helpers.Error(err))
 	}
 
-	logger.L().Ctx(ctx).Warning("shutdown gracefully")
+	logger.L().Ctx(ctx).Info("shutdown gracefully")
 
-}
-
-// TODO
-func connectSensorsManagerWebSocket(sensorManagerAddress string) {
-	logger.L().Warning("Not implemented")
 }

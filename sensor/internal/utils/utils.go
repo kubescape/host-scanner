@@ -118,7 +118,7 @@ func MakeChangedRootFileInfo(ctx context.Context, rootDir string, filePath strin
 	obj.Ownership.Username = username
 
 	if err != nil {
-		logger.L().Ctx(ctx).Error("MakeHostFileInfo", helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("MakeHostFileInfo", helpers.Error(err))
 	}
 
 	// Groupname
@@ -126,7 +126,7 @@ func MakeChangedRootFileInfo(ctx context.Context, rootDir string, filePath strin
 	obj.Ownership.Groupname = groupname
 
 	if err != nil {
-		logger.L().Ctx(ctx).Error("MakeHostFileInfo", helpers.Error(err))
+		logger.L().Ctx(ctx).Warning("MakeHostFileInfo", helpers.Error(err))
 	}
 
 	return obj, nil
