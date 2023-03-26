@@ -1,21 +1,11 @@
 """
-Script providing a way to test the Host-Scanne on a local env. with private K8s env.
+Script providing a way to test the Host-Scanner on a local env. with private K8s env.
 It is installing the dependencies and initializing the relevant k8s env.
-If any issues or error ocurred during the run, script will print it out. 
-after the script completed, you can perform any chnage at the host-scanner and test it with kubescape run. 
+If any issues or error occurred during the run, the script will print it out. 
+After the script is completed, you can perform any change in the host-scanner and test it with kubescape run.
 
-Help: 
-build-host-scanner-local.py --build - building the env. and preparing for local run 
-build-host-scanner-local.py --revert - destroying the env. and closing local run 
-build-host-scanner-local.py --help - showing help
-
-Dependencies: 
-1. minikube is installed
-2. docker is enabled in the system 
-3. kubectl is installed
-4. for cloud providers:
-    Access to a remote private repository such as dockerhub.
-    Access to a cloud provider running cluster.
+For more assistance run 
+build-host-scanner-local.py --help
 """
     
 import subprocess
@@ -25,12 +15,12 @@ import os
 import logging
 
 # global parameters defenition
-CURRENTIMAGENAME = 'quay.io/kubescape/host-scanner'
-CURRENTTAG = 'latest'
-HOSTSCANNERIMAGENAME = 'quay.io/kubescape/host-scanner'
-TMPIMAGENAME = 'local-host-scanner-image'
-DEPLOYMENTYAML = os.getcwd() + '/deployment/k8s-deployment.yaml'
-DOCKERFILE = os.getcwd() + '/build/Dockerfile'
+__CURRENTIMAGENAME__ = 'quay.io/kubescape/host-scanner'
+__CURRENTTAG__ = 'latest'
+__HOSTSCANNERIMAGENAME__ = 'quay.io/kubescape/host-scanner'
+__TMPIMAGENAME__ = 'local-host-scanner-image'
+__DEPLOYMENTYAML__ = os.getcwd() + '/deployment/k8s-deployment.yaml'
+__DOCKERFILE__ = os.getcwd() + '/build/Dockerfile'
 
 
 """
@@ -40,7 +30,7 @@ fucnction is running any OS command and can return it's output/error.
 :param `resFormat` represent the return format (int/str)
 :return command console output if succeeded, otherwise return (-1) 
 """
-def runCmdCommand(cmd, resFormat):
+def run_cmd_command(cmd, resFormat):
 
     try:
         logging.info(f"Running command: '{cmd}'")
@@ -65,7 +55,7 @@ def runCmdCommand(cmd, resFormat):
 function is updating k8s deployment file
 :param `flagType` define if we need to create unique image abd tag name or revert to original (revert/deploy)
 """
-def updateK8sDeploymentFile(flagType):
+def update_k8s_deployment_file(flagType):
     
     logging.info(f"{flagType}ing K8s file")
     
@@ -74,19 +64,19 @@ def updateK8sDeploymentFile(flagType):
     
     try:
         # open k8s-deployment file and search for host-scanner image
-        with open (DEPLOYMENTYAML,'r') as f:
+        with open (__DEPLOYMENTYAML__,'r') as f:
             lines = f.readlines()
             for i, line in enumerate(lines):
                     if flagType == 'deploy':
                         # verify that original host-scanner image is configured
-                        if line.__contains__(HOSTSCANNERIMAGENAME):
-                            line = line.replace(HOSTSCANNERIMAGENAME, TMPIMAGENAME).replace('latest', 'test')
+                        if line.__contains__(__HOSTSCANNERIMAGENAME__):
+                            line = line.replace(__HOSTSCANNERIMAGENAME__, __TMPIMAGENAME__).replace('latest', 'test')
                             bool = True   # check that correct image found. 
                             lines[i] = line
                             lines.insert(i+1, '        imagePullPolicy: Never\n')
                     # reverting image to original host-scanner image name
-                    if flagType == 'revert' and line.__contains__(TMPIMAGENAME):
-                        line = line.replace(TMPIMAGENAME, HOSTSCANNERIMAGENAME).replace('test', 'latest')
+                    if flagType == 'revert' and line.__contains__(__TMPIMAGENAME__):
+                        line = line.replace(__TMPIMAGENAME__, __HOSTSCANNERIMAGENAME__).replace('test', 'latest')
                         bool = True   # check that correct image found. 
                         lines[i] = line
                     if flagType == 'revert' and line.__contains__('imagePullPolicy'):
@@ -103,7 +93,7 @@ def updateK8sDeploymentFile(flagType):
         else:
             # write changes to doc
             try:
-                with open (DEPLOYMENTYAML,'w') as f:
+                with open (__DEPLOYMENTYAML__,'w') as f:
                     for i in lines:
                         f.write(i)
                 f.close
@@ -119,25 +109,25 @@ def updateK8sDeploymentFile(flagType):
 function is configuring the necessary GO env. 
 return 0 for success / otherwise -1
 """
-def configGoEnv():
+def config_go_env():
     
     logging.info("Configuring GO environmnet")
 
-    goPath = runCmdCommand('which go', 'str')
+    goPath = run_cmd_command('which go', 'str')
     if goPath == -1:
         return -1
 
     # update GOPATH
     cmd = 'export GOPATH="' + goPath + '"'
-    if runCmdCommand(cmd, 'int') == -1:
+    if run_cmd_command(cmd, 'int') == -1:
         return -1
     
     # update PATH with latest GOPATH
-    if runCmdCommand('export PATH=$PATH:$GOPATH/bin', 'int') == -1:
+    if run_cmd_command('export PATH=$PATH:$GOPATH/bin', 'int') == -1:
         return -1
     
     # install kubectl-curl if not installed 
-    if runCmdCommand('go install github.com/segmentio/kubectl-curl@latest', 'int'):
+    if run_cmd_command('go install github.com/segmentio/kubectl-curl@latest', 'int'):
         return -1
 
     return 0
@@ -147,7 +137,7 @@ def configGoEnv():
 function reads the input arguments and initialize the processes
 :return 0 build success / -1 build failed 
 """
-def readArgs(args):
+def read_args(args):
     # print help and usage
     if '--help' in args:
         logging.info("""
@@ -176,27 +166,27 @@ def readArgs(args):
         logging.info("Reverting")
 
         # deploy chnages to k8s deployment file 0 - success / -1 failure
-        if updateK8sDeploymentFile('revert') == -1:
+        if update_k8s_deployment_file('revert') == -1:
             return -1
 
         # apply file changes to k8s
-        cmd = 'kubectl apply -f ' + DEPLOYMENTYAML
-        res = runCmdCommand(cmd, 'str')   
+        cmd = 'kubectl apply -f ' + __DEPLOYMENTYAML__
+        res = run_cmd_command(cmd, 'str')   
         if res == -1:    
             return -1
         else:
             logging.info(res)
         
         # build the old docker image 
-        cmd = 'docker build -f ' + DOCKERFILE + ' . -t ' + HOSTSCANNERIMAGENAME + ':latest'
-        res = runCmdCommand(cmd, 'str')
+        cmd = 'docker build -f ' + __DOCKERFILE__ + ' . -t ' + __HOSTSCANNERIMAGENAME__ + ':latest'
+        res = run_cmd_command(cmd, 'str')
         if res == -1:    
             return -1
         else:
             logging.info(res)
         
         # kill minikube 
-        res = runCmdCommand('minikube stop', 'str') 
+        res = run_cmd_command('minikube stop', 'str') 
         if res == -1:    
             return -1
         else:
@@ -207,38 +197,38 @@ def readArgs(args):
         logging.info("Building Host-Scanner localy")
 
         # config GO env. 0-success / -1-failure
-        if configGoEnv() == -1:
+        if config_go_env() == -1:
             return -1
         
         # init minikube
-        res = runCmdCommand('minikube start', 'str')
+        res = run_cmd_command('minikube start', 'str')
         if res == -1:    
             return -1
         else:
             logging.info(res)
         
         # deploy changes to k8s deployment file
-        if updateK8sDeploymentFile('deploy') == -1:
+        if update_k8s_deployment_file('deploy') == -1:
             return -1
         
         # apply file changes to k8s
-        cmd = 'kubectl apply -f ' + DEPLOYMENTYAML
-        res = runCmdCommand(cmd, 'str')   
+        cmd = 'kubectl apply -f ' + __DEPLOYMENTYAML__
+        res = run_cmd_command(cmd, 'str')   
         if res == -1:    
             return -1
         else:
             logging.info(res)
 
         # Point terminal’s docker-cli to the Docker Engine inside minikube:
-        res = runCmdCommand('eval $(minikube docker-env)', 'str') 
+        res = run_cmd_command('eval $(minikube docker-env)', 'str') 
         if res == -1:    
             return -1
         else:
             logging.info(res)
         
         # build the docker image 
-        cmd = 'docker build -f ' + DOCKERFILE + ' . -t ' + TMPIMAGENAME + ':test'
-        res = runCmdCommand(cmd, 'str')
+        cmd = 'docker build -f ' + __DOCKERFILE__ + ' . -t ' + __TMPIMAGENAME__ + ':test'
+        res = run_cmd_command(cmd, 'str')
         if res == -1:    
             return -1
         else:
@@ -256,7 +246,7 @@ if __name__ == '__main__':
     logging.info("Armo's Host-Scanner local environment build strated")
 
     args = sys.argv
-    res = readArgs(args)
+    res = read_args(args)
 
     if res == -1:
         logging.error("Armo's Host-Scanner local environment build failed")

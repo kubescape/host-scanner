@@ -61,10 +61,9 @@ kubectl curl "http://<PODNAME>:7888/version" -n <NAMESPACE>
 ```
 
 
-
 ## Build & test Host-Scanner on local environment
 
-### 1. Pre-requisites
+### 1. Prerequisites
 
 * Clone the repository.
 * [install kubectl](https://kubernetes.io/docs/tasks/tools/)
@@ -78,11 +77,11 @@ kubectl curl "http://<PODNAME>:7888/version" -n <NAMESPACE>
 ### 2. Run Host-Scanner on local environment
 
 #### Using Armo's built in script (with minikube)
->For build it:
+>To build it:
 >```
 > python3 ./scripts/build-host-scanner-local.py --build
 >```
->For revert it:
+>To revert it:
 >```
 > python3 ./scripts/build-host-scanner-local.py --revert
 >```
