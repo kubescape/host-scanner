@@ -58,7 +58,7 @@ func makeChangedRootFileInfoVerbose(ctx context.Context, rootDir string, path st
 		},
 			failMsgs...,
 		)
-		logger.L().Ctx(ctx).Error("failed to MakeHostFileInfo", logArgs...)
+		logger.L().Ctx(ctx).Warning("failed to MakeHostFileInfo", logArgs...)
 	}
 	return fileInfo
 }
@@ -98,14 +98,14 @@ func makeHostDirFilesInfoVerbose(ctx context.Context, dir string, recursive bool
 			// Check if is directory
 			stats, err := os.Stat(utils.HostPath(filePath))
 			if err != nil {
-				logger.L().Ctx(ctx).Error("failed to get file stats",
+				logger.L().Ctx(ctx).Warning("failed to get file stats",
 					helpers.String("in", "makeHostDirFilesInfo"),
 					helpers.String("path", filePath))
 				continue
 			}
 			if stats.IsDir() {
 				if recursionLevel+1 == maxRecursionDepth {
-					logger.L().Ctx(ctx).Error("max recursion depth exceeded",
+					logger.L().Ctx(ctx).Warning("max recursion depth exceeded",
 						helpers.String("in", "makeHostDirFilesInfo"),
 						helpers.String("path", filePath))
 					continue

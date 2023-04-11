@@ -17,14 +17,13 @@ func initHTTPHandlers() {
 	// TODO: implement probe endpoint
 	http.HandleFunc("/kubeletconfigurations", func(rw http.ResponseWriter, r *http.Request) {
 		conf, err := sensor.SenseKubeletConfigurations()
-
 		if err != nil {
 			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
-		} else {
-			rw.WriteHeader(http.StatusOK)
-			if _, err := rw.Write(conf); err != nil {
-				logger.L().Ctx(r.Context()).Error("In kubeletConfigurations handler failed to write", helpers.Error(err))
-			}
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
+		if _, err := rw.Write(conf); err != nil {
+			logger.L().Ctx(r.Context()).Error("In kubeletConfigurations handler failed to write", helpers.Error(err))
 		}
 	})
 	http.HandleFunc("/kubeletcommandline", func(rw http.ResponseWriter, r *http.Request) {
@@ -38,7 +37,7 @@ func initHTTPHandlers() {
 		cmdLine := strings.Join(proc.CmdLine, " ")
 		rw.WriteHeader(http.StatusOK)
 		if _, err := rw.Write([]byte(cmdLine)); err != nil {
-			logger.L().Ctx(r.Context()).Error("In kubeletConfigurations handler failed to write", helpers.Error(err))
+			logger.L().Ctx(r.Context()).Error("In kubeletcommandline handler failed to write", helpers.Error(err))
 		}
 
 	})
@@ -105,11 +104,11 @@ func osReleaseHandler(rw http.ResponseWriter, r *http.Request) {
 	fileContent, err := sensor.SenseOsRelease()
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("failed to SenseOsRelease: %v", err), http.StatusInternalServerError)
-	} else {
-		rw.WriteHeader(http.StatusOK)
-		if _, err := rw.Write(fileContent); err != nil {
-			logger.L().Ctx(r.Context()).Error("In SenseOsRelease handler failed to write", helpers.Error(err))
-		}
+		return
+	}
+	rw.WriteHeader(http.StatusOK)
+	if _, err := rw.Write(fileContent); err != nil {
+		logger.L().Ctx(r.Context()).Error("In SenseOsRelease handler failed to write", helpers.Error(err))
 	}
 }
 
@@ -117,11 +116,11 @@ func kernelVersionHandler(rw http.ResponseWriter, r *http.Request) {
 	fileContent, err := sensor.SenseKernelVersion()
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("failed to sense kernelVersionHandler: %v", err), http.StatusInternalServerError)
-	} else {
-		rw.WriteHeader(http.StatusOK)
-		if _, err := rw.Write(fileContent); err != nil {
-			logger.L().Ctx(r.Context()).Error("In kernelVersionHandler handler failed to write", helpers.Error(err))
-		}
+		return
+	}
+	rw.WriteHeader(http.StatusOK)
+	if _, err := rw.Write(fileContent); err != nil {
+		logger.L().Ctx(r.Context()).Error("In kernelVersionHandler handler failed to write", helpers.Error(err))
 	}
 }
 
@@ -131,10 +130,10 @@ func linuxSecurityHardeningHandler(rw http.ResponseWriter, r *http.Request) {
 }
 
 // GenericSensorHandler do the generic job of encoding the response and error handeling
-func GenericSensorHandler(w http.ResponseWriter, r *http.Request, respContent interface{}, err error, senseName string) {
+func GenericSensorHandler(w http.ResponseWriter, r *http.Request, respContent interface{}, respErr error, senseName string) {
 
 	// Response ok
-	if err == nil {
+	if respErr == nil {
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(respContent); err != nil {
 			logger.L().Ctx(r.Context()).Error(fmt.Sprintf("In %s handler failed to write", senseName), helpers.Error(err))
@@ -143,9 +142,9 @@ func GenericSensorHandler(w http.ResponseWriter, r *http.Request, respContent in
 	}
 
 	// Handle errors
-	senseErr, ok := err.(*sensor.SenseError)
+	senseErr, ok := respErr.(*sensor.SenseError)
 	if !ok {
-		http.Error(w, fmt.Sprintf("failed to %s: %v", senseName, err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to %s: %v", senseName, respErr), http.StatusInternalServerError)
 		return
 	}
 
