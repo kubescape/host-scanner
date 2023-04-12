@@ -173,7 +173,7 @@ func (cr *ContainerRuntimeInfo) getCNIConfigDirFromConfig(ctx context.Context) s
 			helpers.String("configDirPath", configDirPath),
 			helpers.Error(err))
 	} else {
-		configDirFilesFullPath = make([]string, 0, len(outputDirFiles))
+		configDirFilesFullPath = make([]string, len(outputDirFiles))
 
 		// construct and reverse sort config dir files full path
 		for i, filename := range outputDirFiles {
