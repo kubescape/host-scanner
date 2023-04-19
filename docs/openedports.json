@@ -1,0 +1,53 @@
+{
+	"tcpPorts": [
+		{
+			"Transport": "",
+			"LocalAddress": "192.168.49.2",
+			"LocalPort": 10259,
+			"RemoteAddress": "0.0.0.0",
+			"RemotePort": 0,
+			"PID": 0,
+			"Name": ""
+		},
+		{
+			"Transport": "",
+			"LocalAddress": "192.168.49.2",
+			"LocalPort": 10257,
+			"RemoteAddress": "0.0.0.0",
+			"RemotePort": 0,
+			"PID": 0,
+			"Name": ""
+		},
+		{
+			"Transport": "",
+			"LocalAddress": "192.168.49.2",
+			"LocalPort": 10248,
+			"RemoteAddress": "0.0.0.0",
+			"RemotePort": 0,
+			"PID": 0,
+			"Name": ""
+		},
+		{
+			"Transport": "",
+			"LocalAddress": "192.168.49.2",
+			"LocalPort": 34961,
+			"RemoteAddress": "0.0.0.0",
+			"RemotePort": 0,
+			"PID": 0,
+			"Name": ""
+		},
+		{
+			"Transport": "",
+			"LocalAddress": "192.168.49.2",
+			"LocalPort": 2379,
+			"RemoteAddress": "0.0.0.0",
+			"RemotePort": 0,
+			"PID": 0,
+			"Name": ""
+		}
+	],
+	"udpPorts": [],
+	"icmpPorts": []
+
+
+}

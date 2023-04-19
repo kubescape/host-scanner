@@ -1,0 +1,46 @@
+{
+	"serviceFiles": [
+		{
+			"ownership": {
+				"uid": 0,
+				"gid": 0,
+				"username": "root",
+				"groupname": "root"
+			},
+			"path": "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf",
+			"permissions": 420
+		}
+	],
+	"configFile": {
+		"ownership": {
+			"uid": 0,
+			"gid": 0,
+			"username": "root",
+			"groupname": "root"
+		},
+		"path": "/var/lib/kubelet/config.yaml",
+		"content": "YXBpVmVyc2lvbjoga3ViZWxldC5jb25maWcuazhzLmlvL3YxYmV0YTEKYXV0aGVudGljYXRpb246CiAgYW5vbnltb3VzOgogICAgZW5hYmxlZDogZmFsc2UKICB3ZWJob29rOgogICAgY2FjaGVUVEw6IDBzCiAgICBlbmFibGVkOiB0cnVlCiAgeDUwOToKICAgIGNsaWVudENBRmlsZTogL3Zhci9saWIvbWluaWt1YmUvY2VydHMvY2EuY3J0CmF1dGhvcml6YXRpb246CiAgbW9kZTogV2ViaG9vawogIHdlYmhvb2s6CiAgICBjYWNoZUF1dGhvcml6ZWRUVEw6IDBzCiAgICBjYWNoZVVuYXV0aG9yaXplZFRUTDogMHMKY2dyb3VwRHJpdmVyOiBzeXN0ZW1kCmNsdXN0ZXJETlM6Ci0gMTAuOTYuMC4xMApjbHVzdGVyRG9tYWluOiBjbHVzdGVyLmxvY2FsCmNwdU1hbmFnZXJSZWNvbmNpbGVQZXJpb2Q6IDBzCmV2aWN0aW9uSGFyZDoKICBpbWFnZWZzLmF2YWlsYWJsZTogMCUKICBub2RlZnMuYXZhaWxhYmxlOiAwJQogIG5vZGVmcy5pbm9kZXNGcmVlOiAwJQpldmljdGlvblByZXNzdXJlVHJhbnNpdGlvblBlcmlvZDogMHMKZmFpbFN3YXBPbjogZmFsc2UKZmlsZUNoZWNrRnJlcXVlbmN5OiAwcwpoZWFsdGh6QmluZEFkZHJlc3M6IDEyNy4wLjAuMQpoZWFsdGh6UG9ydDogMTAyNDgKaHR0cENoZWNrRnJlcXVlbmN5OiAwcwppbWFnZUdDSGlnaFRocmVzaG9sZFBlcmNlbnQ6IDEwMAppbWFnZU1pbmltdW1HQ0FnZTogMHMKa2luZDogS3ViZWxldENvbmZpZ3VyYXRpb24KbG9nZ2luZzoKICBmbHVzaEZyZXF1ZW5jeTogMAogIG9wdGlvbnM6CiAgICBqc29uOgogICAgICBpbmZvQnVmZmVyU2l6ZTogIjAiCiAgdmVyYm9zaXR5OiAwCm1lbW9yeVN3YXA6IHt9Cm5vZGVTdGF0dXNSZXBvcnRGcmVxdWVuY3k6IDBzCm5vZGVTdGF0dXNVcGRhdGVGcmVxdWVuY3k6IDBzCnJvdGF0ZUNlcnRpZmljYXRlczogdHJ1ZQpydW50aW1lUmVxdWVzdFRpbWVvdXQ6IDBzCnNodXRkb3duR3JhY2VQZXJpb2Q6IDBzCnNodXRkb3duR3JhY2VQZXJpb2RDcml0aWNhbFBvZHM6IDBzCnN0YXRpY1BvZFBhdGg6IC9ldGMva3ViZXJuZXRlcy9tYW5pZmVzdHMKc3RyZWFtaW5nQ29ubmVjdGlvbklkbGVUaW1lb3V0OiAwcwpzeW5jRnJlcXVlbmN5OiAwcwp2b2x1bWVTdGF0c0FnZ1BlcmlvZDogMHMK",
+		"permissions": 420
+	},
+	"kubeConfigFile": {
+		"ownership": {
+			"uid": 0,
+			"gid": 0,
+			"username": "root",
+			"groupname": "root"
+		},
+		"path": "/etc/kubernetes/kubelet.conf",
+		"permissions": 384
+	},
+	"clientCAFile": {
+		"ownership": {
+			"uid": 0,
+			"gid": 0,
+			"username": "root",
+			"groupname": "root"
+		},
+		"path": "/var/lib/minikube/certs/ca.crt",
+		"permissions": 420
+	},
+	"cmdLine": "/var/lib/minikube/binaries/v1.25.3/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=/var/run/cri-dockerd.sock --hostname-override=minikube --image-service-endpoint=/var/run/cri-dockerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.49.2 --runtime-request-timeout=15m "
+}

@@ -14,19 +14,6 @@ import (
 var BuildVersion string
 
 func initHTTPHandlers() {
-	// TODO: implement probe endpoint
-	http.HandleFunc("/kubeletconfigurations", func(rw http.ResponseWriter, r *http.Request) {
-		//TODO: function is deprecated, need to refactor
-		conf, err := sensor.SenseKubeletConfigurations()
-		if err != nil {
-			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
-			return
-		}
-		rw.WriteHeader(http.StatusOK)
-		if _, err := rw.Write(conf); err != nil {
-			logger.L().Ctx(r.Context()).Error("In kubeletConfigurations handler failed to write", helpers.Error(err))
-		}
-	})
 	http.HandleFunc("/kubeletcommandline", func(rw http.ResponseWriter, r *http.Request) {
 		proc, err := sensor.LocateKubeletProcess()
 
