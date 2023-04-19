@@ -29,6 +29,8 @@ func initHTTPHandlers() {
 		}
 
 	})
+
+	// WARNING: the below http requests are used by library: kubescape/core/pkg/hostsensorutils/hostsensorgetfrompod.go
 	http.HandleFunc("/osrelease", osReleaseHandler)
 	http.HandleFunc("/kernelversion", kernelVersionHandler)
 	http.HandleFunc("/linuxsecurityhardening", linuxSecurityHardeningHandler)
