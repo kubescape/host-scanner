@@ -16,6 +16,7 @@ var BuildVersion string
 func initHTTPHandlers() {
 	// TODO: implement probe endpoint
 	http.HandleFunc("/kubeletconfigurations", func(rw http.ResponseWriter, r *http.Request) {
+		//TODO: function is deprecated, need to refactor
 		conf, err := sensor.SenseKubeletConfigurations()
 		if err != nil {
 			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
@@ -41,6 +42,8 @@ func initHTTPHandlers() {
 		}
 
 	})
+
+	// WARNING: the below http requests are used by library: kubescape/core/pkg/hostsensorutils/hostsensorgetfrompod.go
 	http.HandleFunc("/osrelease", osReleaseHandler)
 	http.HandleFunc("/kernelversion", kernelVersionHandler)
 	http.HandleFunc("/linuxsecurityhardening", linuxSecurityHardeningHandler)
