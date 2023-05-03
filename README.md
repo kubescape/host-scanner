@@ -172,7 +172,9 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 
 Create host-scanner pod
 ```
-kubectl apply -f deployment/k8s-deployment.yaml 
+kubectl apply -f https://raw.githubusercontent.com/kubescape/kubescape/master/core/pkg/hostsensorutils/hostsensor.yaml
+
+If command failed, use the below instead:
 ```
 
 Verify pod is launched successfully
