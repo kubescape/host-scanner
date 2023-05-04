@@ -313,7 +313,7 @@ func SenseControlPlaneInfo(ctx context.Context) (*ControlPlaneInfo, error) {
 		return nil, &SenseError{
 			Massage:  "not a control plane node",
 			Function: "SenseControlPlaneInfo",
-			Code:     http.StatusNotFound,
+			Code:     http.StatusOK,
 		}
 	}
 

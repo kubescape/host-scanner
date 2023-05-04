@@ -9,7 +9,7 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 
 |  endpoint  |  test-command |  description  | example |
 |---|---|---|---|
-| `/controlplaneinfo` | `kubectl curl "http://<host-scanner-pod-name>:7888/controlplaneinfo" -n <NAMESPACE>` | Returns ControlPlane related information Returns `404` if case the node is not a control plane. | [example](docs/controlplaneinfo.json) |
+| `/controlplaneinfo` | `kubectl curl "http://<host-scanner-pod-name>:7888/controlplaneinfo" -n <NAMESPACE>` | Returns ControlPlane related information. | [example](docs/controlplaneinfo.json) |
 | `/cniinfo` | `kubectl curl "http://<host-scanner-pod-name>:7888/cniinfo" -n <NAMESPACE>` | Returns container network interface information. | [example](docs/cniinfo.json) |
 | `/kernelversion` | `kubectl curl "http://<host-scanner-pod-name>:7888/kernelversion" -n <NAMESPACE>` | Returns the kernel version. | [example](docs/kernelversion) |
 | `/kubeletinfo` | `kubectl curl "http://<host-scanner-pod-name>:7888/kubeletinfo" -n <NAMESPACE>` | Returns **kubelet** information. | [example](docs/kubeletinfo.json) |
@@ -172,7 +172,12 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 
 Create host-scanner pod
 ```
-kubectl apply -f deployment/k8s-deployment.yaml 
+kubectl apply -f https://raw.githubusercontent.com/kubescape/kubescape/master/core/pkg/hostsensorutils/hostsensor.yaml
+```
+
+If command failed, use the below instead:
+```
+kubectl apply -f deployment/k8s-deployment.yaml
 ```
 
 Verify pod is launched successfully
