@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"github.com/kubescape/go-logger"
 	"github.com/kubescape/go-logger/helpers"
@@ -59,16 +57,25 @@ func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 <<<<<<< HEAD
+<<<<<<< HEAD
 	io.WriteString(w, `{"alive": true}`)
 =======
+=======
+>>>>>>> e44e154 (docs: update endpoint list with /healthz and /readyz)
 	_, err := w.Write([]byte(`{"alive": true}`))
 	if err != nil {
 		logger.
 			L().
+<<<<<<< HEAD
 			Ctx(r.Context()).
 			Error("failed to write response")
 	}
 >>>>>>> a4cf2e0 (a)
+=======
+			Ctx(context.TODO()).
+			Error("failed to write response")
+	}
+>>>>>>> e44e154 (docs: update endpoint list with /healthz and /readyz)
 }
 
 // setupReadyz set the atomic value to start checking the probe.
@@ -79,7 +86,6 @@ func setupReadyz(isReady *atomic.Value) {
 			L().
 			Ctx(context.Background()).
 			Info("Setting up readyz probe")
-		time.Sleep(10 * time.Second)
 		isReady.Store(true)
 		logger.
 			L().

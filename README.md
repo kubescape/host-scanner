@@ -9,6 +9,8 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 
 |  endpoint  |  test-command |  description  | example |
 |---|---|---|---|
+| `/healthz` | `kubectl curl "http://<host-scanner-pod-name>:7888/healthz" -n <NAMESPACE>` | Returns liveness status of `host-scanner`. | [example] `{"alive": true}` |
+| `/readyz` | `kubectl curl "http://<host-scanner-pod-name>:7888/readyz" -n <NAMESPACE>` | Returns readiness status of `host-scanner`. Return `503` in case `host-scanner` is not ready yet. | [example] `{"ready": true}` |
 | `/controlplaneinfo` | `kubectl curl "http://<host-scanner-pod-name>:7888/controlplaneinfo" -n <NAMESPACE>` | Returns ControlPlane related information. | [example](docs/controlplaneinfo.json) |
 | `/cniinfo` | `kubectl curl "http://<host-scanner-pod-name>:7888/cniinfo" -n <NAMESPACE>` | Returns container network interface information. | [example](docs/cniinfo.json) |
 | `/kernelversion` | `kubectl curl "http://<host-scanner-pod-name>:7888/kernelversion" -n <NAMESPACE>` | Returns the kernel version. | [example](docs/kernelversion) |
