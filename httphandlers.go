@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/kubescape/go-logger"
 	"github.com/kubescape/go-logger/helpers"
@@ -14,9 +18,16 @@ import (
 var BuildVersion string
 
 func initHTTPHandlers() {
+	// setup readiness probe.
+	isReady := &atomic.Value{}
+	setupReadyz(isReady)
+
+	// enable handlers for liveness and readiness probes.
+	http.HandleFunc("/healthz", healthzHandler)
+	http.HandleFunc("/readyz", readyzHandler(isReady))
+
 	http.HandleFunc("/kubeletcommandline", func(rw http.ResponseWriter, r *http.Request) {
 		proc, err := sensor.LocateKubeletProcess()
-
 		if err != nil {
 			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
 			return
@@ -27,9 +38,7 @@ func initHTTPHandlers() {
 		if _, err := rw.Write([]byte(cmdLine)); err != nil {
 			logger.L().Ctx(r.Context()).Error("In kubeletcommandline handler failed to write", helpers.Error(err))
 		}
-
 	})
-
 	// WARNING: the below http requests are used by library: kubescape/core/pkg/hostsensorutils/hostsensorgetfrompod.go
 	http.HandleFunc("/osrelease", osReleaseHandler)
 	http.HandleFunc("/kernelversion", kernelVersionHandler)
@@ -43,6 +52,59 @@ func initHTTPHandlers() {
 	http.HandleFunc("/version", versionHandler)
 	http.HandleFunc("/cniinfo", CNIHandler)
 
+}
+
+// healthzHandler is a liveness probe.
+func healthzHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+<<<<<<< HEAD
+	io.WriteString(w, `{"alive": true}`)
+=======
+	_, err := w.Write([]byte(`{"alive": true}`))
+	if err != nil {
+		logger.
+			L().
+			Ctx(r.Context()).
+			Error("failed to write response")
+	}
+>>>>>>> a4cf2e0 (a)
+}
+
+// setupReadyz set the atomic value to start checking the probe.
+func setupReadyz(isReady *atomic.Value) {
+	isReady.Store(false)
+	go func() {
+		logger.
+			L().
+			Ctx(context.Background()).
+			Info("Setting up readyz probe")
+		time.Sleep(10 * time.Second)
+		isReady.Store(true)
+		logger.
+			L().
+			Ctx(context.Background()).
+			Info("readyz probe is positive")
+	}()
+}
+
+// readyzHandler is a readiness probe.
+func readyzHandler(isReady *atomic.Value) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isReady == nil || !isReady.Load().(bool) {
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{"ready": true}`))
+		if err != nil {
+			logger.
+				L().
+				Ctx(r.Context()).
+				Error("failed to write response")
+		}
+	}
 }
 
 func CNIHandler(rw http.ResponseWriter, r *http.Request) {
