@@ -56,26 +56,13 @@ func initHTTPHandlers() {
 func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-<<<<<<< HEAD
-<<<<<<< HEAD
-	io.WriteString(w, `{"alive": true}`)
-=======
-=======
->>>>>>> e44e154 (docs: update endpoint list with /healthz and /readyz)
 	_, err := w.Write([]byte(`{"alive": true}`))
 	if err != nil {
 		logger.
 			L().
-<<<<<<< HEAD
 			Ctx(r.Context()).
 			Error("failed to write response")
 	}
->>>>>>> a4cf2e0 (a)
-=======
-			Ctx(context.TODO()).
-			Error("failed to write response")
-	}
->>>>>>> e44e154 (docs: update endpoint list with /healthz and /readyz)
 }
 
 // setupReadyz set the atomic value to start checking the probe.
