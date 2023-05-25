@@ -15,7 +15,7 @@ func Test_makeHostDirFilesInfo(t *testing.T) {
 	utils.HostFileSystemDefaultLocation = "."
 	fileInfos, err := makeHostDirFilesInfoVerbose(context.TODO(), "testdata/testmakehostfiles", true, nil, 0)
 	assert.NoError(t, err)
-	assert.Len(t, fileInfos, 5)
+	assert.Len(t, fileInfos, 4)
 
 	// Test maxRecursionDepth
 	// create a log file
@@ -28,7 +28,7 @@ func Test_makeHostDirFilesInfo(t *testing.T) {
 	// test
 	fileInfos, err = makeHostDirFilesInfoVerbose(context.TODO(), "testdata/testmakehostfiles", true, nil, maxRecursionDepth-1)
 	assert.NoError(t, err)
-	assert.Len(t, fileInfos, 4)
+	assert.Len(t, fileInfos, 3)
 
 	// check log output for error message
 	data, err := os.ReadFile(f.Name())

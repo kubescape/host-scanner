@@ -81,19 +81,6 @@ func makeHostDirFilesInfoVerbose(ctx context.Context, dir string, recursive bool
 	for fileNames, err = dirInfo.Readdirnames(100); err == nil; fileNames, err = dirInfo.Readdirnames(100) {
 		for i := range fileNames {
 			filePath := path.Join(dir, fileNames[i])
-			fileInfo := makeHostFileInfoVerbose(ctx, filePath,
-				false,
-				helpers.String("in", "makeHostDirFilesInfo"),
-				helpers.String("dir", dir),
-			)
-
-			if fileInfo != nil {
-				*fileInfos = append(*fileInfos, fileInfo)
-			}
-
-			if !recursive {
-				continue
-			}
 
 			// Check if is directory
 			stats, err := os.Stat(utils.HostPath(filePath))
@@ -111,6 +98,21 @@ func makeHostDirFilesInfoVerbose(ctx context.Context, dir string, recursive bool
 					continue
 				}
 				makeHostDirFilesInfoVerbose(ctx, filePath, recursive, fileInfos, recursionLevel+1)
+			}
+
+			fileInfo := makeHostFileInfoVerbose(ctx, filePath,
+				false,
+				helpers.String("in", "makeHostDirFilesInfo"),
+				helpers.String("dir", dir),
+			)
+
+			// if it is not a directory and content is different from nil, then add this to the list.
+			if fileInfo != nil && !stats.IsDir() {
+				*fileInfos = append(*fileInfos, fileInfo)
+			}
+
+			if !recursive {
+				continue
 			}
 		}
 	}
