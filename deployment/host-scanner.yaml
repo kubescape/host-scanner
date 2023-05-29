@@ -27,7 +27,7 @@ spec:
         name: host-scanner
     spec:
       tolerations:
-      # this toleration is to have the DaemonDet runnable on all nodes (including masters)
+      # this toleration is to have the DaemonSet runnable on all nodes (including masters)
       # remove it if your masters can't run pods
       - operator: Exists
       containers:
