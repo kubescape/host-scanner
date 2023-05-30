@@ -85,7 +85,7 @@ func SenseKubeletInfo(ctx context.Context) (*KubeletInfo, error) {
 
 	kubeletProcess, err := LocateKubeletProcess()
 	if err != nil {
-		return &ret, fmt.Errorf("failed to LocateKubeletProcess: %w", err)
+		return &ret, fmt.Errorf("failed to Locate kubelet process: %w", err)
 	}
 
 	// Serivce files
@@ -150,20 +150,4 @@ func kubeletExtractCAFileFromConf(content []byte) (string, error) {
 	}
 
 	return kubeletConfig.Authentication.X509.ClientCAFile, nil
-}
-
-// Deprecated: use SenseKubeletInfo for more information.
-// Return the content of kubelet config file
-func SenseKubeletConfigurations() ([]byte, error) {
-	kubeletProcess, err := LocateKubeletProcess()
-	if err != nil {
-		return nil, fmt.Errorf("failed to LocateKubeletProcess: %w", err)
-	}
-	kubeletConfFileLocation, ok := kubeletProcess.GetArg(kubeletConfigArgName)
-	if !ok || kubeletConfFileLocation == "" {
-		return nil, fmt.Errorf("in SenseKubeletConfigurations failed to find kubelet config File location: %v", kubeletProcess)
-	}
-
-	logger.L().Debug("config loaction", helpers.String("kubeletConfFileLocation", kubeletConfFileLocation))
-	return ReadKubeletConfig(kubeletProcess.ContaineredPath(kubeletConfFileLocation))
 }
