@@ -1,53 +1,51 @@
-# this file is integrated in kubescape/hostsensorutils/hostsensoryamls.go
 apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    app: host-sensor
-    kubernetes.io/metadata.name: armo-kube-host-sensor
-    tier: armo-kube-host-sensor-control-plane
-  name: armo-kube-host-sensor
-
+    app: kubescape-host-scanner
+    k8s-app: kubescape-host-scanner
+    kubernetes.io/metadata.name: kubescape-host-scanner
+    tier: kubescape-host-scanner-control-plane
+  name: kubescape
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: host-sensor
-  namespace: armo-kube-host-sensor
+  name: host-scanner
+  namespace: kubescape
   labels:
-    k8s-app: armo-kube-host-sensor
+    app: host-scanner
+    k8s-app: kubescape-host-scanner
+    otel: enabled
 spec:
   selector:
     matchLabels:
-      name: host-sensor
+      name: host-scanner
   template:
     metadata:
       labels:
-        name: host-sensor
+        name: host-scanner
     spec:
       tolerations:
-      # this toleration is to have the daemonset runnable on master nodes
+      # this toleration is to have the DaemonSet runnable on all nodes (including masters)
       # remove it if your masters can't run pods
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
+      - operator: Exists
       containers:
       - name: host-sensor
-        image: quay.io/kubescape/host-scanner:latest
+        image: kubescape/host-scanner:test
+        imagePullPolicy: Never
         securityContext:
+          allowPrivilegeEscalation: true
           privileged: true
           readOnlyRootFilesystem: true
           procMount: Unmasked
         ports:
-          - name: http
-            hostPort: 7888
+          - name: scanner # Do not change port name
             containerPort: 7888
+            protocol: TCP
         resources:
           limits:
-            cpu: 1m
+            cpu: 0.1m
             memory: 200Mi
           requests:
             cpu: 1m
@@ -55,6 +53,17 @@ spec:
         volumeMounts:
         - mountPath: /host_fs
           name: host-filesystem
+        startupProbe:
+          httpGet:
+            path: /readyz
+            port: 7888
+          failureThreshold: 30
+          periodSeconds: 1
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 7888
+          periodSeconds: 10
       terminationGracePeriodSeconds: 120
       dnsPolicy: ClusterFirstWithHostNet
       automountServiceAccountToken: false
@@ -63,10 +72,5 @@ spec:
           path: /
           type: Directory
         name: host-filesystem
-      hostNetwork: true
       hostPID: true
       hostIPC: true
-
-    
-
-      
