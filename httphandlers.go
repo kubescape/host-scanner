@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync/atomic"
 
 	"github.com/kubescape/go-logger"
@@ -23,20 +22,6 @@ func initHTTPHandlers() {
 	// enable handlers for liveness and readiness probes.
 	http.HandleFunc("/healthz", healthzHandler)
 	http.HandleFunc("/readyz", readyzHandler(isReady))
-
-	http.HandleFunc("/kubeletcommandline", func(rw http.ResponseWriter, r *http.Request) {
-		proc, err := sensor.LocateKubeletProcess()
-		if err != nil {
-			http.Error(rw, fmt.Sprintf("failed to sense kubelet conf: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		cmdLine := strings.Join(proc.CmdLine, " ")
-		rw.WriteHeader(http.StatusOK)
-		if _, err := rw.Write([]byte(cmdLine)); err != nil {
-			logger.L().Ctx(r.Context()).Error("In kubeletcommandline handler failed to write", helpers.Error(err))
-		}
-	})
 	// WARNING: the below http requests are used by library: kubescape/core/pkg/hostsensorutils/hostsensorgetfrompod.go
 	http.HandleFunc("/osrelease", osReleaseHandler)
 	http.HandleFunc("/kernelversion", kernelVersionHandler)
