@@ -17,7 +17,13 @@ var kubeletInfo = &sensor.KubeletInfo{
 		},
 		{
 			Ownership:   &ds.FileOwnership{Err: "", UID: 0, GID: 0, Username: "root", Groupname: "root"},
-			Path:        "/etc/systemd/system/kubelet.service.d/10-containerd.conf",
+			Path:        "/etc/systemd/system/kubelet.service.d/10-container-runtime-flag.conf",
+			Content:     nil,
+			Permissions: 420,
+		},
+		{
+			Ownership:   &ds.FileOwnership{Err: "", UID: 0, GID: 0, Username: "root", Groupname: "root"},
+			Path:        "/etc/systemd/system/kubelet.service.d/10-containerd-base-flag.conf",
 			Content:     nil,
 			Permissions: 420,
 		},

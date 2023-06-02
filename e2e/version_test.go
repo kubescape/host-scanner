@@ -14,7 +14,7 @@ var _ = Describe("Version", func() {
 		err     error
 		resBody []byte
 		// beign compiled for test purpose, we set the version to "latest"
-		expectedResult = "\"latest\"\n"
+		expectedResult = "\"test\"\n"
 	)
 
 	Context("testing /version endpoint", func() {
