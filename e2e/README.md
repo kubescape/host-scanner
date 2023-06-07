@@ -8,6 +8,8 @@ The currently supported platforms are the follows:
 
 * **kind** (local)
 
+* **aks** (managed)
+
 ## Workflow Overview
 
 The workflows manage the entire test process. Each workflow is dedicated to a specific platform (mostly to test managed and local clusters).

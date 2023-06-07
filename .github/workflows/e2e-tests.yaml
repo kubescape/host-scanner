@@ -1,0 +1,463 @@
+name: e2e-tests
+
+on:
+  push:
+    branches: [ "*" ]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+  pull_request:
+    branches: [ "*" ]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+
+jobs:
+  build-host-scanner-image:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Set image version
+        id: image-version
+        run: echo '::set-output name=IMAGE_VERSION::test'
+
+      - name: Set image name
+        id: image-name
+        run: echo '::set-output name=IMAGE_NAME::quay.io/${{ github.repository_owner }}/host-scanner'
+
+      - name: Login to Quay.io
+        env:
+          QUAY_PASSWORD: ${{ secrets.QUAYIO_REGISTRY_PASSWORD }}
+          QUAY_USERNAME: ${{ secrets.QUAYIO_REGISTRY_USERNAME }}
+        run: docker login -u="${QUAY_USERNAME}" -p="${QUAY_PASSWORD}" quay.io
+
+      - name: Build the Docker image
+        run: |
+          docker buildx \
+            build . \
+            --file build/Dockerfile \
+            --tag ${{ steps.image-name.outputs.IMAGE_NAME }}:${{ steps.image-version.outputs.IMAGE_VERSION }} \
+            --tag ${{ steps.image-name.outputs.IMAGE_NAME }}:test \
+            --build-arg BUILD_VERSION=${{ steps.image-version.outputs.IMAGE_VERSION }} \
+            --push
+        env:
+          CGO_ENABLED: 0
+
+  test-kind:
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s: [
+          {
+            name: 'kind', 
+            version: 'v1.25.0',
+            port: '7825'
+          },
+          {
+            name: 'kind',
+            version: 'v1.26.0',
+            port: '7826'
+          },
+          {
+            name: 'kind',
+            version: 'v1.27.0',
+            port: '7827'
+          }
+        ]
+    needs: [build-host-scanner-image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone host-scanner repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Kubectl
+        uses: azure/setup-kubectl@v3
+        id: install
+
+      - name: Install Kind
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          skipClusterCreation: true
+          version: v0.18.0
+
+      - name: Setup test clusters
+        run: |
+          kind create cluster \
+            --kubeconfig test-${{ matrix.k8s.version }} \
+            --name test-${{ matrix.k8s.version }} \
+            --image kindest/node:${{ matrix.k8s.version }}
+
+      - name: Install host-scanner
+        run: |
+          kubectl apply \
+            --kubeconfig test-${{ matrix.k8s.version }} \
+            -f deployment/host-scanner.yaml
+
+      - name: Get Namespace
+        id: namespace
+        run: |
+          namespace=$(cat deployment/host-scanner.yaml | grep -oP "(?<=namespace: )(.*)")
+          echo "NAMESPACE=$namespace" >> $GITHUB_OUTPUT
+
+      - name: Wait for host-scanner ready
+        run: |
+          sleep 15
+          kubectl wait \
+            --for=condition=ready \
+            pod \
+            -l name=host-scanner \
+            --namespace ${{ steps.namespace.outputs.NAMESPACE }} \
+            --timeout=300s \
+            --kubeconfig test-${{ matrix.k8s.version }}
+
+      - name: Setup Kubernetes port-forward daemon
+        run: |
+          kubectl port-forward \
+            'daemonset/host-scanner' \
+            ${{ matrix.k8s.port }}:7888 \
+            --namespace=${{ steps.namespace.outputs.NAMESPACE }} \
+            --kubeconfig=test-${{ matrix.k8s.version }} &
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.19'
+
+      - name: Run e2e tests
+        working-directory: ./e2e
+        run: |
+          go test \
+            -tags ${{ matrix.k8s.name }} \
+            -v -ginkgo.v \
+            -args -port ${{ matrix.k8s.port }}
+        env:
+          KUBECONFIG: ../test-${{ matrix.k8s.version }}
+
+  # setup AKS cluster to run host-scanner on it
+  setup-aks:
+    strategy:
+      fail-fast: false
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    needs: [build-host-scanner-image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download terraform scripts
+        uses: actions/checkout@v3
+        with:
+          ref: 'fix/add-conditional-output-to-aks'
+          repository: armosec/terraform-test-clusters
+          token: ${{ secrets.GH_TOKEN_TERRAFORM_TEST_CLUSTER }}
+
+      - uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: terraform Init
+        run: |
+          terraform init
+        working-directory: ./AKS/module_based/
+
+      - name: terraform apply
+        run: |
+          terraform apply \
+            -auto-approve \
+            -var cluster_owner=hs-e2e \
+            -var resource_group_name=automation-sonar-rg \
+            -var create_resource_group=0
+        working-directory: ./AKS/module_based/
+
+      - name: Get cluster name
+        id: cluster_name
+        run: |
+          cluster_name=$(terraform-bin output -raw kubernetes_cluster_name)
+          echo "CLUSTER_NAME=$cluster_name" >> $GITHUB_OUTPUT
+        working-directory: ./AKS/module_based/
+
+      - name: Retrieve aks kubconfig
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az aks get-credentials \
+              --resource-group automation-sonar-rg \
+              --name ${{ steps.cluster_name.outputs.CLUSTER_NAME }} \
+              --admin \
+              --file ./AKS/module_based/test-aks
+
+      - name: Set right ownerships
+        run: |
+          sudo chown runner:docker test-aks
+          sudo chown runner:docker terraform.tfstate
+        working-directory: ./AKS/module_based/
+
+      - name: Encrypt kubeconfig files
+        run: |
+          gpg \
+            --batch \
+            -c \
+            --symmetric \
+            --cipher-algo AES256 \
+            --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+            ./test-aks
+        working-directory: ./AKS/module_based/
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: kubeconfig-aks
+          path: |
+            ./AKS/module_based/test-aks.gpg
+          retention-days: 1
+
+      - name: Encrypt tfstate file
+        run: |
+          gpg \
+            --batch \
+            -c \
+            --symmetric \
+            --cipher-algo AES256 \
+            --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+            ./terraform.tfstate
+        working-directory: ./AKS/module_based/
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: tfstate-aks
+          path: |
+            ./AKS/module_based/terraform.tfstate.gpg
+          retention-days: 1
+
+#  setup-eks:
+#    strategy:
+#      fail-fast: false
+#    runs-on: ubuntu-latest
+#    needs: [build-host-scanner-image]
+
+#  setup-gke:
+#    strategy:
+#      fail-fast: false
+#    runs-on: ubuntu-latest
+#    needs: [build-host-scanner-image]
+
+  install-host-scanner:
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s: [
+          {
+            name: 'aks',
+            version: 'aks',
+            port: '7801'
+          }
+        ]
+    runs-on: ubuntu-latest
+    needs: [setup-aks]
+    steps:
+      - name: Clone host-scanner repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Kubectl
+        uses: azure/setup-kubectl@v3
+        id: install
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: kubeconfig-${{ matrix.k8s.version }}
+          path: ./test-${{ matrix.k8s.version }}
+
+      - name: Decrypt files
+        run: |
+          gpg \
+            --quiet \
+            --batch \
+            --yes \
+            --decrypt \
+            --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+            --output test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }} \
+            test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }}.gpg
+
+      - uses: azure/use-kubelogin@v1
+        with:
+          kubelogin-version: 'v0.0.29'
+
+      - uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
+
+      - name: Convert kubeconfig
+        run: |
+          kubelogin convert-kubeconfig -l azurecli
+
+      - name: Install host-scanner
+        run: |
+          kubectl apply \
+            --kubeconfig test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }} \
+            -f deployment/host-scanner.yaml
+
+      - name: Get Namespace
+        id: namespace
+        run: |
+          namespace=$(cat deployment/host-scanner.yaml | grep -oP "(?<=namespace: )(.*)")
+          echo "NAMESPACE=$namespace" >> $GITHUB_OUTPUT
+
+      - name: Wait for host-scanner ready
+        run: |
+          sleep 15
+          kubectl wait \
+            --for=condition=ready \
+            pod \
+            -l name=host-scanner \
+            --namespace ${{ steps.namespace.outputs.NAMESPACE }} \
+            --timeout=300s \
+            --kubeconfig test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }}
+
+  run-tests:
+    if: always()
+    strategy:
+      max-parallel: 8
+      fail-fast: false
+      matrix:
+        k8s: [
+          {
+            name: 'aks',
+            version: 'aks',
+            port: '7801'
+          }
+        ]
+    runs-on: ubuntu-latest
+    needs: [install-host-scanner]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.19'
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: kubeconfig-${{ matrix.k8s.version }}
+          path: ./test-${{ matrix.k8s.version }}
+
+      - name: Decrypt kubeconfig files
+        run: |
+          gpg \
+            --quiet \
+            --batch \
+            --yes \
+            --decrypt \
+            --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+            --output test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }} \
+            test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }}.gpg
+
+      - name: Get Namespace
+        id: namespace
+        run: |
+          namespace=$(cat deployment/host-scanner.yaml | grep -oP "(?<=namespace: )(.*)")
+          echo "NAMESPACE=$namespace" >> $GITHUB_OUTPUT
+
+      - name: Setup Kubernetes port-forward daemon
+        run: |
+          kubectl port-forward \
+            'daemonset/host-scanner' \
+            ${{ matrix.k8s.port }}:7888 \
+            --namespace=${{ steps.namespace.outputs.NAMESPACE }} \
+            --kubeconfig=test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }} &
+
+      - name: Run e2e tests
+        working-directory: ./e2e
+        run: |
+          go test \
+            -tags ${{ matrix.k8s.name }} \
+            -v -ginkgo.v \
+            -args -port ${{ matrix.k8s.port }}
+        env:
+          KUBECONFIG: ../test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }}
+
+
+  destroy-aks:
+    if: always()
+    strategy:
+      fail-fast: false
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    needs: [run-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download terraform scripts
+        uses: actions/checkout@v3
+        with:
+          ref: 'fix/add-conditional-output-to-aks'
+          repository: armosec/terraform-test-clusters
+          token: ${{ secrets.GH_TOKEN_TERRAFORM_TEST_CLUSTER }}
+
+      - uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Download tfstate artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: tfstate-aks
+          path: ./AKS/module_based/
+
+      - name: Decrypt files
+        run: |
+          gpg \
+            --quiet \
+            --batch \
+            --yes \
+            --decrypt \
+            --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+            --output terraform.tfstate \
+            terraform.tfstate.gpg
+        working-directory: ./AKS/module_based/
+
+      - name: terraform Init
+        run: |
+          terraform init
+        working-directory: ./AKS/module_based/
+
+      - name: terraform destroy
+        run: |
+          terraform destroy \
+            -auto-approve \
+            -var cluster_owner=hs-e2e \
+            -var resource_group_name=automation-sonar-rg \
+            -var create_resource_group=0
+        working-directory: ./AKS/module_based/

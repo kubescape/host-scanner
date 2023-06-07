@@ -11,37 +11,19 @@ var pkiFiles = &sensor.ControlPlaneInfo{
 	PKIDIr: &ds.FileInfo{Path: "/etc/kubernetes/pki"},
 	PKIFiles: []*ds.FileInfo{
 		{
-			Path: "/etc/kubernetes/pki/apiserver.key",
+			Path: "/etc/kubernetes/pki/etcd/peer.crt",
 		},
 		{
-			Path: "/etc/kubernetes/pki/ca.key",
+			Path: "/etc/kubernetes/pki/etcd/healthcheck-client.crt",
 		},
 		{
-			Path: "/etc/kubernetes/pki/apiserver.crt",
+			Path: "/etc/kubernetes/pki/etcd/ca.crt",
 		},
 		{
-			Path: "/etc/kubernetes/pki/front-proxy-client.key",
+			Path: "/etc/kubernetes/pki/etcd/ca.key",
 		},
 		{
-			Path: "/etc/kubernetes/pki/sa.key",
-		},
-		{
-			Path: "/etc/kubernetes/pki/front-proxy-ca.key",
-		},
-		{
-			Path: "/etc/kubernetes/pki/sa.pub",
-		},
-		{
-			Path: "/etc/kubernetes/pki/apiserver-etcd-client.crt",
-		},
-		{
-			Path: "/etc/kubernetes/pki/front-proxy-ca.crt",
-		},
-		{
-			Path: "/etc/kubernetes/pki/ca.crt",
-		},
-		{
-			Path: "/etc/kubernetes/pki/apiserver-kubelet-client.key",
+			Path: "/etc/kubernetes/pki/etcd/server.crt",
 		},
 		{
 			Path: "/etc/kubernetes/pki/etcd/server.key",
@@ -53,28 +35,46 @@ var pkiFiles = &sensor.ControlPlaneInfo{
 			Path: "/etc/kubernetes/pki/etcd/peer.key",
 		},
 		{
-			Path: "/etc/kubernetes/pki/etcd/server.crt",
+			Path: "/etc/kubernetes/pki/ca.crt",
 		},
 		{
-			Path: "/etc/kubernetes/pki/etcd/ca.key",
+			Path: "/etc/kubernetes/pki/apiserver.crt",
 		},
 		{
-			Path: "/etc/kubernetes/pki/etcd/healthcheck-client.crt",
-		},
-		{
-			Path: "/etc/kubernetes/pki/etcd/ca.crt",
-		},
-		{
-			Path: "/etc/kubernetes/pki/etcd/peer.crt",
-		},
-		{
-			Path: "/etc/kubernetes/pki/apiserver-etcd-client.key",
+			Path: "/etc/kubernetes/pki/ca.key",
 		},
 		{
 			Path: "/etc/kubernetes/pki/front-proxy-client.crt",
 		},
 		{
+			Path: "/etc/kubernetes/pki/front-proxy-ca.key",
+		},
+		{
+			Path: "/etc/kubernetes/pki/apiserver-etcd-client.crt",
+		},
+		{
+			Path: "/etc/kubernetes/pki/front-proxy-ca.crt",
+		},
+		{
 			Path: "/etc/kubernetes/pki/apiserver-kubelet-client.crt",
+		},
+		{
+			Path: "/etc/kubernetes/pki/apiserver-etcd-client.key",
+		},
+		{
+			Path: "/etc/kubernetes/pki/apiserver.key",
+		},
+		{
+			Path: "/etc/kubernetes/pki/front-proxy-client.key",
+		},
+		{
+			Path: "/etc/kubernetes/pki/sa.key",
+		},
+		{
+			Path: "/etc/kubernetes/pki/sa.pub",
+		},
+		{
+			Path: "/etc/kubernetes/pki/apiserver-kubelet-client.key",
 		},
 	},
 }
