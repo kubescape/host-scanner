@@ -1,4 +1,4 @@
-name: e2e-tests
+name: "Test suite (e2e, integration)"
 
 on:
   push:
@@ -52,7 +52,59 @@ jobs:
         env:
           CGO_ENABLED: 0
 
-  test-kind:
+  integration-test:
+    needs: [build-host-scanner-image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout host-scanner repo
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # ratchet:actions/checkout@v3
+
+      - name: Checkout systests repo
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # ratchet:actions/checkout@v3
+        with:
+          repository: armosec/system-tests
+          path: system-tests
+
+      - uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435 # ratchet:actions/setup-python@v4
+        with:
+          python-version: '3.8.13'
+          cache: 'pip'
+
+      - name: create env
+        run: ./create_env.sh
+        working-directory: system-tests/
+
+      - name: Create k8s Kind Cluster
+        id: kind-cluster-install
+        uses: helm/kind-action@d08cf6ff1575077dee99962540d77ce91c62387d # ratchet:helm/kind-action@v1.3.0
+        with:
+          cluster_name: integration
+
+      - name: run integration test
+        env:
+          CUSTOMER: ${{ secrets.CUSTOMER }}
+          USERNAME: ${{ secrets.USERNAME }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID_PROD }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY_PROD }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          source systests_python_env/bin/activate
+
+          python3 systest-cli.py                \
+            -t host_scanner_with_hostsensorrule \
+            -b production                       \
+            -c CyberArmorTests                  \
+            --duration 3                        \
+            --logger DEBUG                      \
+            --kwargs ks_branch=release          \
+            host_scan_yaml=../deployment/host-scanner.yaml
+
+          deactivate
+        working-directory: system-tests/
+
+  e2e-test-multi-version-support:
     strategy:
       fail-fast: false
       matrix:
@@ -145,7 +197,7 @@ jobs:
           KUBECONFIG: ../test-${{ matrix.k8s.version }}
 
   # setup AKS cluster to run host-scanner on it
-  setup-aks:
+  e2e-test-setup-aks:
     strategy:
       fail-fast: false
     env:
@@ -255,7 +307,7 @@ jobs:
 #    runs-on: ubuntu-latest
 #    needs: [build-host-scanner-image]
 
-  install-host-scanner:
+  e2e-test-install-host-scanner:
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
@@ -272,7 +324,7 @@ jobs:
           }
         ]
     runs-on: ubuntu-latest
-    needs: [setup-aks]
+    needs: [e2e-test-setup-aks]
     steps:
       - name: Clone host-scanner repository
         uses: actions/checkout@v3
@@ -335,7 +387,7 @@ jobs:
             --timeout=300s \
             --kubeconfig test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }}
 
-  run-tests:
+  e2e-test-run-test-suite:
     if: always()
     strategy:
       max-parallel: 8
@@ -349,7 +401,7 @@ jobs:
           }
         ]
     runs-on: ubuntu-latest
-    needs: [install-host-scanner]
+    needs: [e2e-test-install-host-scanner]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -402,7 +454,7 @@ jobs:
           KUBECONFIG: ../test-${{ matrix.k8s.version }}/test-${{ matrix.k8s.version }}
 
 
-  destroy-aks:
+  e2e-test-destroy-aks:
     if: always()
     strategy:
       fail-fast: false
@@ -411,7 +463,7 @@ jobs:
       ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-    needs: [run-tests]
+    needs: [e2e-test-run-test-suite]
     runs-on: ubuntu-latest
     steps:
       - name: Download terraform scripts
