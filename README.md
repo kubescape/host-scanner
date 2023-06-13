@@ -1,4 +1,9 @@
-# Kubescape host-scanner
+# Kubescape Host-Scanner
+
+[![Test Suite](https://github.com/kubescape/host-scanner/actions/workflows/test-suite.yaml/badge.svg)](https://github.com/kubescape/host-scanner/actions/workflows/test-suite.yaml) ![build](https://img.shields.io/github/actions/workflow/status/kubescape/host-scanner/build.yaml)
+
+![code size](https://img.shields.io/github/languages/code-size/kubescape/host-scanner)
+
 ## Description
 This component is a data acquisition component in the Kubescape project. Its goal is to collect information about the Kubernetes node host for further security posture evaluation in Kubescape.
 
