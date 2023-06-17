@@ -3,7 +3,7 @@
 package e2e_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	. "github.com/onsi/ginkgo"
@@ -29,7 +29,7 @@ var _ = Describe("OsRelease", func() {
 			Expect(res.StatusCode).To(BeEquivalentTo(200))
 		})
 		It("should return the expected value", func() {
-			resBody, err = ioutil.ReadAll(res.Body)
+			resBody, err = io.ReadAll(res.Body)
 			Ω(string(resBody)).Should(ContainSubstring(expectedResult))
 		})
 	})

@@ -1,7 +1,7 @@
 package e2e_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	. "github.com/onsi/ginkgo"
@@ -27,7 +27,7 @@ var _ = Describe("Version", func() {
 			Expect(res.StatusCode).To(BeEquivalentTo(200))
 		})
 		It("should return the expected value", func() {
-			resBody, err = ioutil.ReadAll(res.Body)
+			resBody, err = io.ReadAll(res.Body)
 			Expect(string(resBody)).To(BeEquivalentTo(expectedResult))
 		})
 	})
