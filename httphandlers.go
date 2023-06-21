@@ -12,7 +12,11 @@ import (
 	"github.com/kubescape/host-scanner/sensor"
 )
 
-var BuildVersion string
+var (
+	BuildVersion string
+	healthzEP    = "/healthz"
+	readyzEP     = "/readyz"
+)
 
 func initHTTPHandlers() {
 	// setup readiness probe.
@@ -20,8 +24,8 @@ func initHTTPHandlers() {
 	setupReadyz(isReady)
 
 	// enable handlers for liveness and readiness probes.
-	http.HandleFunc("/healthz", healthzHandler)
-	http.HandleFunc("/readyz", readyzHandler(isReady))
+	http.HandleFunc(healthzEP, healthzHandler)
+	http.HandleFunc(readyzEP, readyzHandler(isReady))
 	// WARNING: the below http requests are used by library: kubescape/core/pkg/hostsensorutils/hostsensorgetfrompod.go
 	http.HandleFunc("/osrelease", osReleaseHandler)
 	http.HandleFunc("/kernelversion", kernelVersionHandler)
