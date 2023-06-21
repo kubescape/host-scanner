@@ -83,7 +83,25 @@ func initHTTPRouter() http.Handler {
 	negroniRouter.Use(negroni.NewRecovery())
 	negroniRouter.UseFunc(filterNLogHTTPErrors)
 	handler := http.Handler(http.DefaultServeMux)
-	handler = otelhttp.NewHandler(handler, "", otelhttp.WithSpanNameFormatter(spanName))
+	filteredEndPoints := []string{healthzEP, readyzEP}
+	handler = otelhttp.NewHandler(
+		handler,
+		"",
+		otelhttp.WithSpanNameFormatter(spanName),
+		otelhttp.WithFilter(otelhttp.Filter(
+			// This function return false in case the req.URL.Path is equal to "/readyz" or "/healthz".
+			// If we want to exclude others endpoint from telemetry,
+			// just add them in `filteredEndPoints` variable.
+			func(req *http.Request) bool {
+				for _, f := range filteredEndPoints {
+					if req.URL.Path == f {
+						return false
+					}
+				}
+				return true
+			}),
+		),
+	)
 	negroniRouter.UseHandler(handler)
 	return CaselessMatcher(negroniRouter)
 }
