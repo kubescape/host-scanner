@@ -199,6 +199,12 @@ On a new terminal, view pod logs:
 kubectl logs <host-scanner-pod-name> --namespace <namespace> -f
 ```
 
+## SBOM verification
+
+We currently generate and upload **SBOM** of our **docker** image.
+
+To scan for vulnerabilities, our recommendation is to use [grype](https://github.com/anchore/grype).
+
 ## Contributions
 
 Thanks to all our contributors! Check out our [CONTRIBUTING](https://github.com/kubescape/kubescape/blob/master/CONTRIBUTING.md) file to learn how to join them.
