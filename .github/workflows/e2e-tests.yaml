@@ -161,9 +161,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          ref: 'fix/add-conditional-output-to-aks'
           repository: armosec/terraform-test-clusters
+          ref: 'fix/add-conditional-output-to-aks'
           token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          fetch-depth: 0
           #token: ${{ secrets.GH_TOKEN_TERRAFORM_TEST_CLUSTER }}
 
       - uses: azure/login@v1
