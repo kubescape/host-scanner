@@ -158,6 +158,8 @@ jobs:
     steps:
       - name: Download terraform scripts
         uses: actions/checkout@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           ref: 'fix/add-conditional-output-to-aks'
           repository: armosec/terraform-test-clusters
