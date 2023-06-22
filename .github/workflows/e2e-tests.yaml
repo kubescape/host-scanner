@@ -163,7 +163,8 @@ jobs:
         with:
           ref: 'fix/add-conditional-output-to-aks'
           repository: armosec/terraform-test-clusters
-          token: ${{ secrets.GH_TOKEN_TERRAFORM_TEST_CLUSTER }}
+          token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          #token: ${{ secrets.GH_TOKEN_TERRAFORM_TEST_CLUSTER }}
 
       - uses: azure/login@v1
         with:
