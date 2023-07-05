@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"sort"
 
 	"github.com/kubescape/go-logger"
 	"github.com/kubescape/go-logger/helpers"
@@ -79,6 +80,8 @@ func makeHostDirFilesInfoVerbose(ctx context.Context, dir string, recursive bool
 
 	var fileNames []string
 	for fileNames, err = dirInfo.Readdirnames(100); err == nil; fileNames, err = dirInfo.Readdirnames(100) {
+		// add sorting to make tests deterministic
+		sort.Strings(fileNames)
 		for i := range fileNames {
 			filePath := path.Join(dir, fileNames[i])
 

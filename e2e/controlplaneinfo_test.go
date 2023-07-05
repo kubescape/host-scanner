@@ -4,6 +4,7 @@ package e2e_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -41,9 +42,9 @@ var _ = Describe("ControlPlaneInfo", func() {
 			Expect(resultBody.PKIDIr.Path).To(Equal(pkiFiles.PKIDIr.Path))
 
 			// (leave it there for debugging)
-			//for i := range resultBody.PKIFiles {
-			//	fmt.Println(resultBody.PKIFiles[i].Path)
-			//}
+			for i := range resultBody.PKIFiles {
+				fmt.Println(resultBody.PKIFiles[i].Path)
+			}
 			for i := range resultBody.PKIFiles {
 				Expect(resultBody.PKIFiles[i].Path).To(Equal(pkiFiles.PKIFiles[i].Path))
 			}
