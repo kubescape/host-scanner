@@ -86,19 +86,16 @@ func getCNINames(ctx context.Context) []string {
 	}
 
 	for _, cni := range supportedCNIs {
-		p, err := utils.LocateProcessByExecSuffix(cni.processSuffix)
+		p, _ := utils.LocateProcessByExecSuffix(cni.processSuffix)
 
 		if p != nil {
 			logger.L().Debug("CNI process found", helpers.String("name", cni.name))
 			CNIs = append(CNIs, cni.name)
 		}
+	}
 
-		if err != nil {
-			logger.L().Ctx(ctx).Warning("getCNIName- Failed to locate process for cni",
-				helpers.String("cni name", cni.name),
-				helpers.Error(err))
-		}
-
+	if len(CNIs) == 0 {
+		logger.L().Warning("No CNI found")
 	}
 
 	return CNIs
