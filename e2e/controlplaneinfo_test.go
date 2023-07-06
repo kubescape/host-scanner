@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	sensor "github.com/kubescape/host-scanner/sensor"
+	"github.com/kubescape/go-logger"
 )
 
 var _ = Describe("ControlPlaneInfo", func() {
@@ -41,9 +42,9 @@ var _ = Describe("ControlPlaneInfo", func() {
 			Expect(resultBody.PKIDIr.Path).To(Equal(pkiFiles.PKIDIr.Path))
 
 			// (leave it there for debugging)
-			//for i := range resultBody.PKIFiles {
-			//	fmt.Println(resultBody.PKIFiles[i].Path)
-			//}
+			for i := range resultBody.PKIFiles {
+				logger.L().Info(resultBody.PKIFiles[i].Path)
+			}
 			for i := range resultBody.PKIFiles {
 				Expect(resultBody.PKIFiles[i].Path).To(Equal(pkiFiles.PKIFiles[i].Path))
 			}
