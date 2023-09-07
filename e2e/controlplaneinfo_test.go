@@ -4,7 +4,7 @@ package e2e_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	. "github.com/onsi/ginkgo"
@@ -33,7 +33,7 @@ var _ = Describe("ControlPlaneInfo", func() {
 		It("should return the expected value of PKIDir and PKIFiles", func() {
 			resultBody := &sensor.ControlPlaneInfo{}
 
-			resBody, err = ioutil.ReadAll(res.Body)
+			resBody, err = io.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 
 			err = json.Unmarshal(resBody, resultBody)

@@ -4,7 +4,7 @@ package e2e_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	ds "github.com/kubescape/host-scanner/sensor/datastructures"
@@ -31,7 +31,7 @@ var _ = Describe("LinuxSecurityHardening", func() {
 		It("should return the expected value of LinuxSecurityHardeningStatus", func() {
 			resultBody := &ds.LinuxSecurityHardeningStatus{}
 
-			resBody, err = ioutil.ReadAll(res.Body)
+			resBody, err = io.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 
 			err = json.Unmarshal(resBody, resultBody)

@@ -4,7 +4,7 @@ package e2e_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/kubescape/host-scanner/sensor"
@@ -41,7 +41,7 @@ var _ = Describe("Openedports", func() {
 			}
 			jsonOpenedPortsInfo := &sensor.OpenPortsStatus{}
 
-			resBody, err = ioutil.ReadAll(res.Body)
+			resBody, err = io.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 
 			err = json.Unmarshal(resBody, jsonOpenedPortsInfo)
