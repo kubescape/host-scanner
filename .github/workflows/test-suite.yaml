@@ -110,7 +110,7 @@ jobs:
       matrix:
         k8s: [
           {
-            name: 'kind', 
+            name: 'kind',
             version: 'v1.25.0',
             port: '7825'
           },
@@ -184,7 +184,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.19'
+          go-version: '1.22'
 
       - name: Run e2e tests
         working-directory: ./e2e
@@ -410,7 +410,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.19'
+          go-version: '1.22'
 
       - name: Download artifacts
         uses: actions/download-artifact@v3

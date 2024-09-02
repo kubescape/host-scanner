@@ -6,12 +6,12 @@ on:
     types: [ edited, opened, synchronize, reopened ]
     paths-ignore: ['**.md']
 jobs:
-  # main job of testing and building the env. 
+  # main job of testing and building the env.
   test:
     permissions:
       pull-requests: write
     uses: kubescape/workflows/.github/workflows/go-basic-tests.yaml@main
     with:
-      GO_VERSION: 1.19
-      CGO_ENABLED: 0 
+      GO_VERSION: 1.22
+      CGO_ENABLED: 0
     secrets: inherit
