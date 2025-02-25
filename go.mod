@@ -6,6 +6,7 @@ toolchain go1.22.11
 
 require (
 	github.com/BurntSushi/toml v1.2.0
+	github.com/armosec/utils-go v0.0.58
 	github.com/codegangsta/negroni v1.0.0
 	github.com/coreos/go-systemd/v22 v22.4.0
 	github.com/godbus/dbus/v5 v5.1.0
@@ -13,6 +14,7 @@ require (
 	github.com/kubescape/go-logger v0.0.23
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.29.0
+	github.com/stretchr/testify v1.9.0
 	github.com/uptrace/opentelemetry-go-extra/otelzap v0.3.2
 	github.com/weaveworks/procspy v0.0.0-20150706124340-cb970aa190c3
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0
@@ -28,7 +30,7 @@ require (
 require (
 	github.com/briandowns/spinner v1.23.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fatih/color v1.17.0 // indirect
@@ -60,7 +62,8 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelutil v0.3.2 // indirect
 	github.com/uptrace/uptrace-go v1.30.1 // indirect
@@ -78,6 +81,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
@@ -90,18 +94,11 @@ require (
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiextensions-apiserver v0.26.1 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
-)
-
-require (
-	github.com/armosec/utils-go v0.0.12
-	github.com/pkg/errors v0.9.1 // indirect
-	github.com/stretchr/testify v1.9.0
-	go.uber.org/multierr v1.11.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
