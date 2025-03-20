@@ -12,6 +12,6 @@ jobs:
       pull-requests: write
     uses: kubescape/workflows/.github/workflows/go-basic-tests.yaml@main
     with:
-      GO_VERSION: 1.22
+      GO_VERSION: 1.23
       CGO_ENABLED: 0
     secrets: inherit
