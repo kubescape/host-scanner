@@ -145,7 +145,6 @@ Host-scanner is deployed as a privileged Kubernetes DaemonSet in the cluster. It
 >        securityContext:
 >          privileged: true
 >          readOnlyRootFilesystem: true
->          procMount: Unmasked
 >        ports:
 >          - name: http
 >            hostPort: 7888
