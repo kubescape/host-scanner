@@ -1,9 +1,9 @@
-FROM --platform=$BUILDPLATFORM golang:1.23.12-bookworm AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25-bookworm AS builder
 
-ENV GO111MODULE=on CGO_ENABLED=0
 WORKDIR /work
 ARG BUILD_VERSION
 ARG TARGETOS TARGETARCH
+ENV GO111MODULE=on CGO_ENABLED=0
 
 RUN --mount=target=. \
     --mount=type=cache,target=/root/.cache/go-build \
